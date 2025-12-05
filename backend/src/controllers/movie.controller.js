@@ -2,7 +2,10 @@ const movieService = require('../services/movie.service');
 
 const getAllMovies = async (req, res) => {
   try {
-    const movies = await movieService.getAllMovies();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8; // 1 page 8 bộ
+
+    const movies = await movieService.getAllMovies(page, limit);
 
     // status 200 OK
     res.status(200).json({
