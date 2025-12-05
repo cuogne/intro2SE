@@ -1,11 +1,11 @@
 const app = require('./app');
 const movieRoute = require('./routes/movie.routes');
-const connectMongoDB = require('./config/mongodb.config');
+const db = require('./config/mongodb.config');
 
 const PORT = 3000;
 
 // connect to MongoDB
-connectMongoDB();
+db.connectMongoDB();
 
 app.use('/api/v1', movieRoute);
 

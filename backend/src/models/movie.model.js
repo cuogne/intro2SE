@@ -8,6 +8,7 @@ const movieSchema = new mongoose.Schema({
   posterImg: { type: String },
   trailerLink: { type: String },
   description: { type: String },
+  status: { type: String },
 });
 
 const Movie = mongoose.model('Movie', movieSchema);
