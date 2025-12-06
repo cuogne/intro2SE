@@ -12,6 +12,7 @@ const connectMongoDB = async () => {
 
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
+    throw error;
   }
 };
 
@@ -22,6 +23,7 @@ const importMovies = async () => {
     console.log(`Inserted ${movies.length} movies into MongoDB`);
   } catch (error) {
     console.error('Error importing movies:', error);
+    throw error;
   }
 }
 
