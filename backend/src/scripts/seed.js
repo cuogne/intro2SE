@@ -6,34 +6,43 @@ const Movie = require('../models/movie.model');
 const cinemas = require('./data/cinema');
 const Cinema = require('../models/cinema.model');
 
+const Showtime = require('../models/showtime.model');
+const generateShowtimes = require('./data/showtime')
+
 const connectMongoDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
+
     // await importMovies();
-    await importCimemas();
+    // await importCinemas();
+    await generateShowtimes();
+
+    console.log('✅ All data imported successfully!');
+    process.exit(0);
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
-    throw error;
+    process.exit(1);
   }
 };
 
 const importMovies = async () => {
   try {
     await Movie.deleteMany({});
-    await Movie.insertMany(movies);
-    console.log(`Inserted ${movies.length} movies into MongoDB`);
+    const insertedMovies = await Movie.insertMany(movies);
+    console.log(`✅ Inserted ${insertedMovies.length} movies into MongoDB`);
+    return insertedMovies; // Return with generated IDs
   } catch (error) {
     console.error('Error importing movies:', error);
     throw error;
   }
 };
 
-const importCimemas = async () => {
+const importCinemas = async () => {
   try {
     await Cinema.deleteMany({});
     const insertedCinemas = await Cinema.insertMany(cinemas);
-    console.log(`Inserted ${insertedCinemas.length} cinemas into MongoDB`);
+    console.log(`✅ Inserted ${insertedCinemas.length} cinemas into MongoDB`);
     return insertedCinemas; // Return the inserted cinemas with their generated IDs
   } catch (error) {
     console.error('Error importing cinemas:', error);
