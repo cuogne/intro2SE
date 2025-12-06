@@ -1,15 +1,17 @@
 const app = require('./app');
 const movieRoute = require('./routes/movie.routes');
-const db = require('./config/mongodb.config');
+const cinemaRoute = require('./routes/cinema.routes');
+const connectMongoDB = require('./config/mongodb.config');
 
 const PORT = 3000;
 
-app.use('/api/v1', movieRoute);
+app.use('/api/v1/movies', movieRoute);
+app.use('/api/v1/cinema', cinemaRoute);
 
 const startServer = async () => {
   try {
     // connect to MongoDB before starting the server
-    await db.connectMongoDB();
+    await connectMongoDB();
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
