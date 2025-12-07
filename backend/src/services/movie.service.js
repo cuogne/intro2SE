@@ -27,6 +27,50 @@ const getAllMovies = async (page, limit) => {
   };
 };
 
+const getNowShowingMovies = async (page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const results = Movie.find({ status: 'now_showing' }).skip(skip).limit(limit);
+
+  const totalMovie = Movie.countDocuments({ status: 'now_showing' });
+
+  const [movies, total] = await Promise.all([results, totalMovie]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    movies,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+    },
+  };
+}
+
+const getComingSoonMovies = async (page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const results = Movie.find({ status: 'coming_soon' }).skip(skip).limit(limit);
+
+  const totalMovie = Movie.countDocuments({ status: 'coming_soon' });
+
+  const [movies, total] = await Promise.all([results, totalMovie]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    movies,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+    },
+  };
+}
+
 const getMovieById = async (id) => {
   return await Movie.findById(id);
 };
@@ -49,6 +93,8 @@ const deleteMovie = async (id) => {
 
 module.exports = {
   getAllMovies,
+  getNowShowingMovies,
+  getComingSoonMovies,
   getMovieById,
   createMovie,
   updateMovie,

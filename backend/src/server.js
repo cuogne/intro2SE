@@ -7,8 +7,8 @@ const connectMongoDB = require('./config/mongodb.config');
 const PORT = 3000;
 
 app.use('/api/v1/movies', movieRoute);
-app.use('/api/v1/cinema', cinemaRoute);
-app.use('/api/v1/showtime', showtimeRoute);
+app.use('/api/v1/cinemas', cinemaRoute);
+app.use('/api/v1/showtimes', showtimeRoute);
 
 const startServer = async () => {
   try {
