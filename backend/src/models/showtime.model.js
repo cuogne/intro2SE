@@ -6,12 +6,17 @@ const showtimeSchema = new mongoose.Schema({
   
   startTime: { type: Date, required: true, index: true },
 
+  price: {type: Number, default: 45000},
+
+  totalSeats: { type: Number, required: true },
+
+  availableSeats: {type: Number, required: true },
+
   seats: [{
     _id: false, 
     row: String,
     number: Number,
     isBooked: { type: Boolean, default: false },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
   }]
 });
 
