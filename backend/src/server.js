@@ -1,12 +1,14 @@
 const app = require('./app');
 const movieRoute = require('./routes/movie.routes');
 const cinemaRoute = require('./routes/cinema.routes');
+const showtimeRoute = require('./routes/showtime.route');
 const connectMongoDB = require('./config/mongodb.config');
 
 const PORT = 3000;
 
 app.use('/api/v1/movies', movieRoute);
 app.use('/api/v1/cinemas', cinemaRoute);
+app.use('/api/v1/showtimes', showtimeRoute);
 
 const startServer = async () => {
   try {
