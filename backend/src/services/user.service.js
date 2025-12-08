@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 // dki tai khoan
-const register = async ({ username, email, password, name, role }) => {
+const register = async ({ username, email, password, name }) => {
     const checkUsername = await User.findOne({ username })
     const checkEmail = await User.findOne({ email })
 
@@ -25,23 +25,32 @@ const register = async ({ username, email, password, name, role }) => {
         email,
         password: hashedPassword,
         name,
-        role: role || 'user'
+        role: 'user'
     })
 
     await newUser.save() // save in db
-    return newUser
+
+    return {
+        user: {
+            id: newUser._id,
+            username: newUser.username,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role
+        }
+    }
 }
 
 const login = async ({ username, password}) => {
     const checkUser = await User.findOne({username})
 
     if (!checkUser){
-        throw new Error('username ko ton tai')
+        throw new Error('Username not found')
     }
 
     const checkPassword = bcrypt.compareSync(password, checkUser.password)
     if (!checkPassword){
-        throw new Error('Sai pass roi')
+        throw new Error('Incorrect password')
     }
 
     // create jwt token
@@ -53,7 +62,16 @@ const login = async ({ username, password}) => {
     process.env.JWT_SECRET, 
     { expiresIn: '1h' })
 
-    return { checkUser, token }
+    return { 
+        user: {
+            id: checkUser._id,
+            username: checkUser.username,
+            email: checkUser.email,
+            name: checkUser.name,
+            role: checkUser.role
+        },
+        token 
+    }
 }
 
 module.exports = {

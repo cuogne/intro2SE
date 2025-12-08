@@ -16,9 +16,9 @@ const auth = async (req, res, next) => {
         const user = await User.findById(decoded.id) // tim user trong db
 
         if (!user) {
-            return res.status(401).json({
+            return res.status(404).json({
                 success: false,
-                message: 'ko tim thay user'
+                message: 'User not found'
             })
         }
 

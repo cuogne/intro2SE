@@ -2,16 +2,11 @@ const userService = require('../services/user.service')
 
 const register = async (req, res) => {
     try {
-        const {username, email, password, name, role} = req.body
-        const newUser = await userService.register({ username, email, password, name, role })
+        const {username, email, password, name} = req.body
+        const newUser = await userService.register({ username, email, password, name })
         res.status(201).json({
             success: true,
-            data: {
-                username: newUser.username,
-                email: newUser.email,
-                name: newUser.name,
-                role: newUser.role
-            }
+            data: newUser
         })
     } catch (error) {
         res.status(400).json({
@@ -25,18 +20,10 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const {username, password} = req.body
-        const { checkUser, token } = await userService.login({ username, password})
+        const { user, token } = await userService.login({ username, password})
         res.status(200).json({
             success: true,
-            data: {
-                user: {
-                    username: checkUser.username,
-                    email: checkUser.email,
-                    name: checkUser.name,
-                    role: checkUser.role
-                },
-                token
-            }
+            data: { user, token }
         })
     } catch (error) {
         res.status(400).json({
