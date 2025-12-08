@@ -1,15 +1,28 @@
 const app = require('./app');
-const apiV1Routes = require('./routes/api.v1.routes');
+const movieRoute = require('./routes/movie.routes');
+const cinemaRoute = require('./routes/cinema.routes');
+const showtimeRoute = require('./routes/showtime.route');
 const connectMongoDB = require('./config/mongodb.config');
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// connect to MongoDB
-connectMongoDB();
+app.use('/api/v1/movies', movieRoute);
+app.use('/api/v1/cinemas', cinemaRoute);
+app.use('/api/v1/showtimes', showtimeRoute);
 
-app.use('/api/v1', apiV1Routes);
+const startServer = async () => {
+  try {
+    // connect to MongoDB before starting the server
+    await connectMongoDB();
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`API endpoint: http://localhost:${PORT}/api/v1`);
-});
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`API endpoint: http://localhost:${PORT}/api/v1`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
