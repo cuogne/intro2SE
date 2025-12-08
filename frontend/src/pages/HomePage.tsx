@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
   return (
@@ -8,9 +9,11 @@ const HomePage: React.FC = () => {
         Hệ thống quản lý rạp phim hiện đại của HCMUS
       </p>
       
-      <button className="bg-black text-white px-8 py-3 text-lg font-medium rounded hover:bg-gray-800 transition-colors">
-        Đặt vé ngay
-      </button>
+      <Link to="/movies"> 
+        <button className="bg-black text-white px-8 py-3 text-lg font-medium rounded hover:bg-gray-800 transition-colors cursor-pointer">
+          Đặt vé ngay
+        </button>
+      </Link>
     </div>
   );
 };
