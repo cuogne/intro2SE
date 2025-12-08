@@ -1,11 +1,11 @@
 const validateRegister = (req, res, next) => {
-    const {username, email, password, name} = req.body
+    const {username, email, password} = req.body
 
     // fill all
-    if (!username || !email || !password || !name) {
+    if (!username || !email || !password) {
         return res.status(400).json({
             success: false,
-            message: 'All fields are required: username, email, password, name'
+            message: 'All fields are required: username, email, password'
         })
     }
 

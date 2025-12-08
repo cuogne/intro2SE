@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 // dki tai khoan
-const register = async ({ username, email, password, name }) => {
+const register = async ({ username, email, password}) => {
     const checkUsername = await User.findOne({ username })
     const checkEmail = await User.findOne({ email })
 
@@ -24,7 +24,6 @@ const register = async ({ username, email, password, name }) => {
         username,
         email,
         password: hashedPassword,
-        name,
         role: 'user'
     })
 
@@ -35,7 +34,6 @@ const register = async ({ username, email, password, name }) => {
             id: newUser._id,
             username: newUser.username,
             email: newUser.email,
-            name: newUser.name,
             role: newUser.role
         }
     }
@@ -67,7 +65,6 @@ const login = async ({ username, password}) => {
             id: checkUser._id,
             username: checkUser.username,
             email: checkUser.email,
-            name: checkUser.name,
             role: checkUser.role
         },
         token 
