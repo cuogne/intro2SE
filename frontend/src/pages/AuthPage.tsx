@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { User } from 'lucide-react';
+import { User, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const AuthPage: React.FC = () => {
+  const { login } = useAuth(); // Lấy hàm login từ context
   const [isRegister, setIsRegister] = useState(true);
   const navigate = useNavigate();
 
   // State lưu dữ liệu form
   const [formData, setFormData] = useState({
     username: '',
+    email: '',
     password: '',
     confirmPassword: ''
   });
@@ -26,32 +29,52 @@ const AuthPage: React.FC = () => {
   // Xử lý Submit
   const handleSubmit = async () => {
     setError(''); // Reset lỗi cũ
+
+    if (!formData.username || !formData.password) {
+        setError("Vui lòng nhập đầy đủ tên tài khoản và mật khẩu.");
+        return;
+    }
     try {
         if (isRegister) {
             // Logic Đăng ký
+            if (!formData.email) {
+                setError("Vui lòng nhập Email.");
+                return;
+            }
+
             if (formData.password !== formData.confirmPassword) {
                 setError("Mật khẩu nhập lại không khớp!");
                 return;
             }
             await authService.register({
                 username: formData.username,
+                email: formData.email,
                 password: formData.password
             });
             alert("Đăng ký thành công! Vui lòng đăng nhập.");
             setIsRegister(false); // Chuyển sang tab đăng nhập
+            setFormData({ username: '', email: '', password: '', confirmPassword: '' });
         } else {
             // Logic Đăng nhập
-            await authService.login({
+            const res = await authService.login({
                 username: formData.username,
                 password: formData.password
             });
+            if (res.success && res.data) {
+                // Gọi hàm login của Context để cập nhật Header ngay lập tức
+                login(res.data.user, res.data.token);
+                
+                alert("Đăng nhập thành công!");
+                navigate('/'); 
+            }
             alert("Đăng nhập thành công!");
-            navigate('/'); // Chuyển về trang chủ
+            navigate('/movies'); // Chuyển về trang chủ
         }
     } catch (err: any) {
         console.error(err);
-        // Hiển thị lỗi từ backend trả về (nếu có)
-        setError(err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.");
+        // Lấy message lỗi từ backend (res.status(400).json({ message, error }))
+        const serverMessage = err.response?.data?.message || err.response?.data?.error;
+        setError(serverMessage || "Có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
@@ -63,64 +86,94 @@ const AuthPage: React.FC = () => {
 
       <div className="flex border border-gray-300 rounded mb-8 overflow-hidden">
         <button 
-          onClick={() => setIsRegister(false)}
-          className={`px-6 py-2 text-sm font-medium ${!isRegister ? 'bg-black text-white' : 'bg-white text-black'}`}
+          onClick={() => { setIsRegister(false); setError(''); }}
+          className={`px-6 py-2 text-sm font-medium cursor-pointer ${!isRegister ? 'bg-black text-white' : 'bg-white text-black'}`}
         >
           Đăng nhập
         </button>
         <button 
-          onClick={() => setIsRegister(true)}
-          className={`px-6 py-2 text-sm font-medium ${isRegister ? 'bg-black text-white' : 'bg-white text-black'}`}
+          onClick={() => { setIsRegister(true); setError(''); }}
+          className={`px-6 py-2 text-sm font-medium cursor-pointer ${isRegister ? 'bg-black text-white' : 'bg-white text-black'}`}
         >
           Đăng ký
         </button>
       </div>
 
       <div className="w-full max-w-md space-y-4 px-4">
-        {error && <div className="text-red-500 text-sm text-center font-bold">{error}</div>}
+        {error && <div className="text-red-500 text-sm text-center font-bold bg-red-50 p-2 rounded border border-red-200">{error}</div>}
         
-        <div>
+        {/* Username Input */}
+        <div className="relative">
             <label className="block text-sm font-bold mb-2">Tên tài khoản</label>
-            <input 
-                name="username"
-                type="text" 
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Nhập tên tài khoản"
-                className="w-full border-2 border-black rounded p-3 focus:outline-none"
-            />
-        </div>
-
-        <div>
-            <label className="block text-sm font-bold mb-2">Mật khẩu</label>
-            <input 
-                name="password"
-                type="password" 
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Nhập mật khẩu"
-                className="w-full border-2 border-black rounded p-3 focus:outline-none"
-            />
-        </div>
-
-        {isRegister && (
-            <div>
-                <label className="block text-sm font-bold mb-2">Nhập lại mật khẩu</label>
+            <div className="relative">
                 <input 
-                    name="confirmPassword"
-                    type="password" 
-                    value={formData.confirmPassword}
+                    name="username"
+                    type="text" 
+                    value={formData.username}
                     onChange={handleChange}
-                    placeholder="Xác nhận mật khẩu"
-                    className="w-full border-2 border-black rounded p-3 focus:outline-none"
+                    placeholder="Nhập tên tài khoản"
+                    className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
                 />
+                <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+            </div>
+        </div>
+
+        {/* Email Input - CHỈ HIỆN KHI ĐĂNG KÝ */}
+        {isRegister && (
+            <div className="relative">
+                <label className="block text-sm font-bold mb-2">Email</label>
+                <div className="relative">
+                    <input 
+                        name="email"
+                        type="email" 
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="example@email.com"
+                        className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                    />
+                    <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                </div>
+            </div>
+        )}
+
+        {/* Password Input */}
+        <div className="relative">
+            <label className="block text-sm font-bold mb-2">Mật khẩu</label>
+            <div className="relative">
+                <input 
+                    name="password"
+                    type="password" 
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Nhập mật khẩu"
+                    className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                />
+                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+            </div>
+        </div>
+
+        {/* Confirm Password - CHỈ HIỆN KHI ĐĂNG KÝ */}
+        {isRegister && (
+            <div className="relative">
+                <label className="block text-sm font-bold mb-2">Nhập lại mật khẩu</label>
+                <div className="relative">
+                    <input 
+                        name="confirmPassword"
+                        type="password" 
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Xác nhận mật khẩu"
+                        className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                    />
+                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                </div>
             </div>
         )}
 
         <div className="pt-4 flex justify-center">
             <button 
                 onClick={handleSubmit}
-                className="bg-black text-white px-8 py-3 rounded font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+                className="bg-black text-white px-8 py-3 rounded font-medium hover:bg-gray-800 transition-colors cursor-pointer w-full md:w-auto"
             >
                 {isRegister ? 'Đăng ký' : 'Đăng nhập'}
             </button>

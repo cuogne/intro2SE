@@ -3,7 +3,7 @@ import api from './api';
 // Kiểu dữ liệu gửi đi khi đăng ký
 export interface RegisterPayload {
   username: string; // Hoặc fullName tùy backend
-  email?: string;   // Nếu backend cần
+  email: string;   
   password: string;
 }
 
@@ -15,18 +15,23 @@ export interface LoginPayload {
 
 export const authService = {
   register: async (data: RegisterPayload) => {
+    // API trả về: { success: true, data: newUser }
     const response = await api.post('/auth/register', data);
     return response.data;
   },
 
   login: async (data: LoginPayload) => {
     const response = await api.post('/auth/login', data);
+
+    const responseData = response.data;
     // Lưu token vào localStorage nếu đăng nhập thành công
-    if (response.data && response.data.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('user', JSON.stringify(response.data.user)); // Lưu thông tin user
+    if (responseData.success && responseData.data && responseData.data.token) {
+        const { token, user } = responseData.data;
+        
+        localStorage.setItem('accessToken', token);
+        localStorage.setItem('user', JSON.stringify(user));
     }
-    return response.data;
+    return responseData;
   },
 
   logout: () => {
