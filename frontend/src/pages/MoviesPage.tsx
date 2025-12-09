@@ -2,15 +2,18 @@ import React, { useEffect, useState } from 'react';
 import MovieCard from '../components/MovieCard';
 import { fetchMovies } from '../services/movieService';
 import type { Movie } from '../services/movieService';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 8; // Dựa trên hình vẽ (2 hàng x 4 cột)
+const ITEMS_PER_PAGE = 8;
 
 const MoviesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Now Showing' | 'Coming Soon'>('Now Showing');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  
+  // 1. Thêm State cho từ khóa tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Load data khi đổi Tab
   useEffect(() => {
@@ -18,43 +21,73 @@ const MoviesPage: React.FC = () => {
       setLoading(true);
       const data = await fetchMovies(activeTab);
       setMovies(data);
-      setCurrentPage(1); // Reset về trang 1 khi đổi tab
+      setCurrentPage(1);
+      // Reset tìm kiếm khi đổi tab (tuỳ chọn)
+      setSearchTerm(''); 
       setLoading(false);
     };
     loadData();
   }, [activeTab]);
 
-  // Logic phân trang
-  const totalPages = Math.ceil(movies.length / ITEMS_PER_PAGE);
-  const currentMovies = movies.slice(
+  // 2. Logic Lọc phim (Search Logic)
+  // Lọc phim trước, sau đó mới Phân trang
+  const filteredMovies = movies.filter(movie => 
+    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // 3. Logic Phân trang (Dựa trên danh sách đã lọc)
+  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE);
+  const currentMovies = filteredMovies.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Reset về trang 1 nếu người dùng nhập tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Tab Switcher - Giống thiết kế */}
-      <div className="flex gap-4 mb-8">
-        <button
-          onClick={() => setActiveTab('Now Showing')}
-          className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
-            activeTab === 'Now Showing' 
-              ? 'bg-black text-white' 
-              : 'bg-white text-black hover:bg-gray-100'
-          }`}
-        >
-          Phim đang chiếu
-        </button>
-        <button
-          onClick={() => setActiveTab('Coming Soon')}
-          className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
-            activeTab === 'Coming Soon' 
-              ? 'bg-black text-white' 
-              : 'bg-white text-black hover:bg-gray-100'
-          }`}
-        >
-          Phim sắp chiếu
-        </button>
+      
+      {/* --- KHU VỰC HEADER CỦA TRANG (Tab + Tìm kiếm) --- */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        
+        {/* Tab Switcher */}
+        <div className="flex gap-4">
+          <button
+            onClick={() => setActiveTab('Now Showing')}
+            className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
+              activeTab === 'Now Showing' 
+                ? 'bg-black text-white' 
+                : 'bg-white text-black hover:bg-gray-100'
+            }`}
+          >
+            Phim đang chiếu
+          </button>
+          <button
+            onClick={() => setActiveTab('Coming Soon')}
+            className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
+              activeTab === 'Coming Soon' 
+                ? 'bg-black text-white' 
+                : 'bg-white text-black hover:bg-gray-100'
+            }`}
+          >
+            Phim sắp chiếu
+          </button>
+        </div>
+
+        {/* Ô Tìm Kiếm Mới */}
+        <div className="relative w-full md:w-96">
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm phim..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full border border-black rounded px-4 py-2 pl-10 focus:outline-none focus:ring-1 focus:ring-black"
+          />
+          <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
+        </div>
       </div>
 
       {/* Grid Movies */}
@@ -62,6 +95,13 @@ const MoviesPage: React.FC = () => {
         <div className="text-center py-20">Đang tải dữ liệu...</div>
       ) : (
         <>
+          {/* Thông báo nếu không tìm thấy phim */}
+          {filteredMovies.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              Không tìm thấy phim nào phù hợp với từ khóa "{searchTerm}".
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-12">
             {currentMovies.map((movie) => (
               <MovieCard key={movie._id} movie={movie} />
@@ -79,7 +119,6 @@ const MoviesPage: React.FC = () => {
                 <ChevronLeft className="w-4 h-4 mr-1" /> Prev
               </button>
 
-              {/* Render số trang */}
               {Array.from({ length: totalPages }).map((_, idx) => {
                 const pageNum = idx + 1;
                 return (

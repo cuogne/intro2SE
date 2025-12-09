@@ -11,7 +11,7 @@ const Header: React.FC = () => {
           CineMax
         </Link>
 
-        {/* Search Bar - Giống thiết kế Main Page.png */}
+        {/* Search Bar - Giống thiết kế Main Page.png 
         <div className="flex-1 max-w-2xl mx-8 relative">
           <input 
             type="text" 
@@ -19,7 +19,7 @@ const Header: React.FC = () => {
           />
           <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
         </div>
-
+        */}
         {/* User Icon */}
         <Link to="/auth">
             <User className="w-8 h-8 text-black border border-black rounded-full p-1" />
