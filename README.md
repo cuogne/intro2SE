@@ -11,15 +11,16 @@ Cài đặt thư viện: Chạy npm install.
 
 Kiểm tra file .env (tạo nếu không có): Đảm bảo file chứa các biến môi trường quan trọng:
 PORT=
+
 MONGO_URI=
+
 JWT_SECRET=
 
 Chạy lệnh:
-npm start
-# Hoặc node index.js
+npm start Hoặc node index.js
 
 Đảm bảo server báo: 
-+ Server is running on port 3000 
++ Server is running on port ...
 + Connected to MongoDB.
 
 Bước 2: Khởi động Frontend App
