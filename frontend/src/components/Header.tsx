@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
