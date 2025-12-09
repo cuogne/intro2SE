@@ -10,9 +10,9 @@ Mở Terminal mới và di chuyển tới thư mục chứa mã nguồn Backend 
 Cài đặt thư viện: Chạy npm install.
 
 Kiểm tra file .env (tạo nếu không có): Đảm bảo file chứa các biến môi trường quan trọng:
-PORT=3000
-MONGO_URI=mongodb+srv://db_movie:group09@cluster0.ru3thky.mongodb.net/?appName=Cluster0
-JWT_SECRET=bi_mat
+PORT=
+MONGO_URI=
+JWT_SECRET=
 
 Chạy lệnh:
 npm start

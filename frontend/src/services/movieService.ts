@@ -13,7 +13,7 @@ export interface Movie {
 }
 
 // DỮ LIỆU GIẢ (Backup)
-const MOCK_MOVIES: Movie[] = Array.from({ length: 8 }).map((_, index) => ({
+const MOCK_MOVIES: Movie[] = Array.from({ length: 20 }).map((_, index) => ({
   _id: `mock-${index}`,
   title: `Phim Mẫu ${index + 1}`,
   minutes: 120,
@@ -25,15 +25,21 @@ const MOCK_MOVIES: Movie[] = Array.from({ length: 8 }).map((_, index) => ({
   status: index % 2 === 0 ? 'Now Showing' : 'Coming Soon',
 }));
 
-export const fetchMovies = async (status: 'Now Showing' | 'Coming Soon'): Promise<Movie[]> => {
+export const fetchMovies = async (
+  status: 'Now Showing' | 'Coming Soon',
+  page: number = 1 
+): Promise<Movie[]> => {
   try {
-    const endpoint = status === 'Now Showing' ? '/v1/movies/now_showing' : '/v1/movies/coming_soon';
-    console.log(`📡 Đang gọi API: ${endpoint}`);
+    const basePath = status === 'Now Showing' ? '/v1/movies/now_showing' : '/v1/movies/coming_soon';
+    
+    const endpoint = `${basePath}?page=${page}`;
+    
+    // console.log(`📡 Đang gọi API: ${endpoint}`);
     
     const response = await api.get(endpoint);
     const resData = response.data;
 
-    console.log("🔍 Cấu trúc trả về gốc:", resData);
+    // console.log("🔍 Cấu trúc trả về gốc:", resData);
 
     // TRƯỜNG HỢP 1: Backend trả về mảng trực tiếp [Movie, Movie]
     if (Array.isArray(resData)) {
@@ -45,23 +51,23 @@ export const fetchMovies = async (status: 'Now Showing' | 'Coming Soon'): Promis
         return resData.data.length ? resData.data : MOCK_MOVIES.filter(m => m.status === status);
     }
 
-    // TRƯỜNG HỢP 3: Backend trả về object phân trang { data: { docs: [...], total: 10 } } (Thường gặp với Mongoose Paginate)
+    // TRƯỜNG HỢP 3: Backend trả về object phân trang phức tạp
     if (resData.data && typeof resData.data === 'object') {
-        // Thử tìm các key chứa mảng phổ biến
         const innerData = resData.data;
-        console.log("📦 Đang tìm mảng trong object:", Object.keys(innerData));
-
+        
+        // Tìm mảng phim trong các key phổ biến
         if (Array.isArray(innerData.docs)) return innerData.docs;       // mongoose-paginate
         if (Array.isArray(innerData.movies)) return innerData.movies;   // tự định nghĩa
         if (Array.isArray(innerData.results)) return innerData.results; // cấu trúc khác
         if (Array.isArray(innerData.items)) return innerData.items;     // cấu trúc khác
     }
 
-    console.warn("⚠️ Không tìm thấy mảng phim trong phản hồi API. Dùng Mock Data.");
+    //console.warn("⚠️ Không tìm thấy mảng phim trong phản hồi API. Dùng Mock Data.");
     return MOCK_MOVIES.filter(m => m.status === status);
 
   } catch (error) {
     console.error("❌ Lỗi gọi API:", error);
+    // Khi lỗi vẫn trả về Mock Data để UI không bị trắng trang
     return MOCK_MOVIES.filter(m => m.status === status);
   }
 };
