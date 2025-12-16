@@ -24,7 +24,9 @@ const register = async ({ username, email, password}) => {
         username,
         email,
         password: hashedPassword,
-        role: 'user'
+        role: 'user',
+        createdAt: new Date(),
+        updatedAt: new Date(),
     })
 
     await newUser.save() // save in db
