@@ -1,0 +1,39 @@
+@baseUrl = http://localhost:3000/api
+
+### Login
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "abc123",
+  "password": "123456"
+}
+
+### luu token vao bien
+@authToken = {{loginRequest.response.body.$.data.token}}
+
+### Tao booking moi
+# @name createBooking
+POST {{baseUrl}}/v1/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "showtimeId": "693526551594edd0e70d5cff",
+  "seats": [
+    { "row": "A", "number": 1 },
+    { "row": "A", "number": 2 }
+  ]
+}
+
+### Luu bookingId tu response
+@bookingId = {{createBooking.response.body.$.data._id}}
+
+### Lay danh sach ve cua user dang login
+GET {{baseUrl}}/v1/bookings/my-booking
+Authorization: Bearer {{authToken}}
+
+### Lay chi tiet 1 ve cua user
+GET {{baseUrl}}/v1/bookings/my-booking/{{bookingId}}
+Authorization: Bearer {{authToken}}
