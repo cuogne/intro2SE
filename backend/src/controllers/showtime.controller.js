@@ -1,12 +1,15 @@
 const showtimeService = require('../services/showtime.service');
 
-const getShowtimes = async (req, res) => {
+const getShowtimesByQuery = async (req, res) => {
     try {
-        const movie = req.query.movie;
-        const date = req.query.date;
-        const cinema = req.query.cinema;
+        const movie = req.query.movieId;
+        const date = req.query.date; // YYYY-MM-DD
+        const cinema = req.query.cinemaId;
+        const page = req.query.page || 1;
+        const limit = req.query.limit || 10;
 
-        const showtimes = await showtimeService.getShowtimes(movie, date, cinema)
+        // api/v1/showtimes?movieId=movieId&cinemaId=cinemaId&date=2025-12-18&page=1&limit=10
+        const showtimes = await showtimeService.getShowtimesByQuery(movie, date, cinema, page, limit)
         res.status(200).json({
             success: true,
             data: showtimes
@@ -115,7 +118,7 @@ const deleteShowtime = async (req, res) => {
 };
 
 module.exports = {
-    getShowtimes,
+    getShowtimesByQuery,
     getShowtimeById,
     createShowtime,
     updateShowtime,

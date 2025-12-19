@@ -57,6 +57,7 @@
 - **cinemaId**: ID của rạp (liên kết với Cinema)
 - **startTime**: Thời gian bắt đầu chiếu (bao gồm cả ngày và giờ)
 - **price**: Giá vé cho suất chiếu
+- **totalSeats**: Tổng số ghế của suất chiếu
 - **availableSeats**: Số lượng ghế còn trống
 - **seats**: Mảng các ghế của suất chiếu
   - **row**: Ký hiệu hàng (ví dụ: "A")
@@ -75,9 +76,9 @@
 
 ---
 
-## JSON mẫu
+## JSON mẫu (Model Examples - Không phải Response)
 
-### Movie
+### Movie Model
 ```javascript
 {
   id: "uuid-movie-1234",
@@ -126,6 +127,7 @@
   cinemaId: "uuid-cinema-5678",         // Rạp: Cinemax Sinh Viên
   startTime: "2025-12-15T19:30:00Z",    // 15/12/2025 19:30
   price: 45000,
+  totalSeats: 6,
   availableSeats: 4,
   seats: [
     { row: "A", number: 1, isBooked: false },
@@ -187,7 +189,7 @@
 ### Showtime APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/api/v1/showtimes` | Lấy danh sách tất cả suất chiếu<br>Query params: `?movieId=&cinemaId=&date=` | No |
+| GET | `/api/v1/showtimes` | Lấy danh sách tất cả suất chiếu<br>Query params: `?movieId=&cinemaId=&date=&page=&limit=` | No |
 | GET | `/api/v1/showtimes/:id` | Lấy chi tiết suất chiếu theo id | No |
 | POST | `/api/v1/showtimes` | Thêm suất chiếu mới | Admin only |
 | PUT | `/api/v1/showtimes/:id` | Cập nhật thông tin suất chiếu | Admin only |
