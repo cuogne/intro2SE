@@ -20,7 +20,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "showtimeId": "693526551594edd0e70d5cff",
+  "showtimeId": "69458be61231ce4578f2980b",
   "seats": [
     { "row": "A", "number": 1 },
     { "row": "A", "number": 2 }
@@ -31,9 +31,9 @@ Content-Type: application/json
 @bookingId = {{createBooking.response.body.$.data._id}}
 
 ### Lay danh sach ve cua user dang login
-GET {{baseUrl}}/v1/bookings/my-booking
+GET {{baseUrl}}/v1/bookings
 Authorization: Bearer {{authToken}}
 
 ### Lay chi tiet 1 ve cua user
-GET {{baseUrl}}/v1/bookings/my-booking/{{bookingId}}
+GET {{baseUrl}}/v1/bookings/
 Authorization: Bearer {{authToken}}

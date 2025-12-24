@@ -1,6 +1,6 @@
 const bookingService = require('../services/booking.service');
 
-// GET /api/v1/bookings/my-booking
+// GET /api/v1/bookings
 const getBookingByUser = async (req, res) => {
   try {
     const userId = req.user.id; // id user login trong token
@@ -19,13 +19,13 @@ const getBookingByUser = async (req, res) => {
   }
 };
 
-// GET /api/v1/bookings/my-booking/:id_book
+// GET /api/v1/bookings/:id
 const getBookingById = async (req, res) => {
   try {
-    const { id_book } = req.params; // :id_book
+    const { id } = req.params; // :id
     const currentUser = req.user.id;
 
-    const booking = await bookingService.getBookingById(id_book, currentUser);
+    const booking = await bookingService.getBookingById(id, currentUser);
 
     res.status(200).json({
       success: true,

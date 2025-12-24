@@ -2,7 +2,7 @@ const Booking = require('../models/booking.model');
 const Showtime = require('../models/showtime.model');
 const mongoose = require('mongoose');
 
-// GET booking/my-booking
+// GET /api/v1/bookings
 const getBookingByUser = async (userId) => {
   return await Booking.find({ user: userId })
     .select('showtime user seat price bookedAt')
@@ -24,7 +24,7 @@ const getBookingByUser = async (userId) => {
     .sort({ bookedAt: -1 });
 };
 
-// lay ve theo id ve /booking/my-booking/:id
+// GET /api/v1/bookings/:id
 const getBookingById = async (bookingId, currentUserId) => {
   const booking = await Booking.findOne({
     _id: bookingId,
