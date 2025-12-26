@@ -15,7 +15,7 @@ const getShowtimesByQuery = async (req, res) => {
             data: showtimes
         });
     }
-    catch (error){
+    catch (error) {
         res.status(500).json({
             success: false,
             message: 'Error fetching showtimes',
@@ -51,7 +51,24 @@ const getShowtimeById = async (req, res) => {
 
 const createShowtime = async (req, res) => {
     try {
-        const newShowtime = await showtimeService.createShowtime(req.body);
+        // Map API field names to model field names
+        const { movieId, cinemaId, startTime, price } = req.body;
+
+        if (!movieId || !cinemaId || !startTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'movieId, cinemaId, and startTime are required'
+            });
+        }
+
+        const showtimeData = {
+            movie: movieId,
+            cinema: cinemaId,
+            startTime,
+            ...(price && { price }) // Only include price if provided
+        };
+
+        const newShowtime = await showtimeService.createShowtime(showtimeData);
 
         res.status(201).json({
             success: true,

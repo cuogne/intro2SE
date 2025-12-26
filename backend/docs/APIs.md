@@ -59,7 +59,7 @@
 - **price**: Giá vé cho suất chiếu
 - **totalSeats**: Tổng số ghế của suất chiếu
 - **availableSeats**: Số lượng ghế còn trống
-- **seats**: Mảng các ghế của suất chiếu
+- **seats**: Mảng các ghế của suất chiếu (khi tạo suất chiếu, ghế được tạo dựa trên seatLayout của rạp)
   - **row**: Ký hiệu hàng (ví dụ: "A")
   - **number**: Số ghế trong hàng (ví dụ: 1)
   - **isBooked**: Trạng thái ghế (`true`/`false`)
@@ -99,10 +99,28 @@
   id: "uuid-cinema-5678",
   name: "Cinemax Sinh Viên",
   address: "Nhà văn hóa sinh viên, TP.HCM",
-  seatLayout: [
-    { row: "A", seats: [{ number: 1 }, { number: 2 }, { number: 3 }] },
-    { row: "B", seats: [{ number: 1 }, { number: 2 }, { number: 3 }] }
-  ]
+  "seatLayout": [
+        {
+            "row": "A",
+            "seats": ["A1", "A2", "A3", "A4", "A5"]
+        },
+        {
+            "row": "B",
+            "seats": ["B1", "B2", "B3", "B4", "B5"]
+        },
+        {
+            "row": "C",
+            "seats": ["C1", "C2", "C3", "C4", "C5"]
+        },
+        {
+            "row": "D",
+            "seats": ["D1", "D2", "D3", "D4", "D5"]
+        },
+        {
+            "row": "E",
+            "seats": ["E1", "E2", "E3", "E4", "E5"]
+        }
+    ]
 }
 ```
 
@@ -201,3 +219,88 @@
 | GET | `/api/v1/bookings` | Lấy danh sách vé đã đặt của user | Login |
 | GET | `/api/v1/bookings/:id` | Lấy chi tiết vé đã đặt theo id | Login |
 | POST | `/api/v1/bookings` | Đặt vé mới | Login |
+
+### Tạo mới dữ liệu
+
+1. Khi thêm thông tin 1 bộ phim thì cần cung cấp đầy đủ các trường sau trong body của request (phải login với quyền admin):
+```javascript
+// POST /api/v1/movies
+{
+  "title": "Inception",
+  "durationMinutes": 148,
+  "genres": ["Action", "Sci-Fi"],
+  "releaseDate": "2010-07-16",
+  "posterImg": "https://linktoimage.com/inception.jpg",
+  "trailerLink": "https://youtube.com/trailer-inception",
+  "description": "A thief who steals corporate secrets through the use of dream-sharing technology...",
+  "status": "now_showing"
+}
+```
+
+2. Thêm mới 1 rạp phim thì cần cung cấp đầy đủ các trường sau trong body của request (phải login với quyền admin):
+```javascript
+// POST /api/v1/cinemas
+{
+  "name": "Cinemax Sinh Viên",
+  "address": "Nhà văn hóa sinh viên, TP.HCM",
+  "seatLayout": [
+        {
+            "row": "A",
+            "seats": ["A1", "A2", "A3", "A4", "A5"]
+        },
+        {
+            "row": "B",
+            "seats": ["B1", "B2", "B3", "B4", "B5"]
+        },
+        {
+            "row": "C",
+            "seats": ["C1", "C2", "C3", "C4", "C5"]
+        },
+        {
+            "row": "D",
+            "seats": ["D1", "D2", "D3", "D4", "D5"]
+        },
+        {
+            "row": "E",
+            "seats": ["E1", "E2", "E3", "E4", "E5"]
+        }
+    ]
+}
+```
+
+3. Thêm 1 tài khoản user mới: (role mặc định cho các tài khoản này sẽ là `user`)
+```javascript
+// POST /api/auth/register
+{
+  "username": "abc123",
+  "email": "abc123@gmail.com",
+  "password": "password123"
+}
+```
+
+4. Tạo mới một suất chiếu phim: (phải login với quyền admin)
+```javascript
+// POST /api/v1/showtimes
+{
+  "movieId": "693522f1ac9357d6f3874442", // Phim Avatar 3
+  "cinemaId": "6944be92946fe3fc1e3fab08", // Rạp Cinemax Sinh Viên
+  "startTime": "2025-12-25T18:30:00Z" // 25/12/2025 18:30
+}
+```
+
+(Layout ghế sẽ tự động được tạo dựa trên seatLayout của rạp và được set isBooked = false cho tất cả ghế)
+
+5. Đặt vé cho một suất chiếu: (khách hàng phải login)
+```javascript
+// POST /api/v1/bookings
+{
+  "showtimeId": "uuid-showtime-1213",     // ID của suất chiếu
+  "userId": "uuid-user-91011",            // ID của user đặt vé
+  "seats": [                              // Mảng ghế muốn đặt
+    { "row": "A", "number": 2 },
+    { "row": "A", "number": 3 }
+  ]
+}
+```
+
+Tổng giá tiền sẽ được tính tự động dựa trên số ghế × giá vé của suất chiếu.
