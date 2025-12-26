@@ -295,12 +295,13 @@
 // POST /api/v1/bookings
 {
   "showtimeId": "uuid-showtime-1213",     // ID của suất chiếu
-  "userId": "uuid-user-91011",            // ID của user đặt vé
   "seats": [                              // Mảng ghế muốn đặt
     { "row": "A", "number": 2 },
     { "row": "A", "number": 3 }
   ]
 }
 ```
+
+UserId sẽ được lấy từ token của user login.
 
 Tổng giá tiền sẽ được tính tự động dựa trên số ghế × giá vé của suất chiếu.
