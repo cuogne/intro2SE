@@ -69,7 +69,7 @@ const createZalopayOrder = async (bookingId) => {
 
     const embed_data = {
         //sau khi hoàn tất thanh toán sẽ đi vào link này (thường là link web thanh toán thành công của mình)
-        redirecturl: 'https://phongthuytaman.com',
+        redirecturl: process.env.ZALOPAY_REDIRECT_URL || 'https://facebook.com',
     };
 
     const transID = Math.floor(Math.random() * 1000000);
@@ -79,10 +79,10 @@ const createZalopayOrder = async (bookingId) => {
         app_user: booking.user._id.toString(),
         app_time: Date.now(), // milliseconds
         item: items,
-        embed_data: embedData,
+        embed_data: JSON.stringify(embed_data),
         amount: amount,
         description: description,
-        bank_code: "", // để trống thì sẽ thanh toán thêm mấy cái khác
+        bank_code: 'zaloapp', // để trống thì sẽ thanh toán thêm mấy cái khác
         //khi thanh toán xong, zalopay server sẽ POST đến url này để thông báo cho server của mình
         //Chú ý: cần dùng ngrok để public url thì Zalopay Server mới call đến được
         callback_url: zalopayConfig.callbackUrl
@@ -100,12 +100,21 @@ const createZalopayOrder = async (bookingId) => {
             booking.paymentProvider = 'zalopay';
             booking.paymentMeta = {
                 orderToken: result.data.order_token,
-                zpTransToken: result.data.zp_trans_token
+                zpTransToken: result.data.zp_trans_token,
+                orderUrl: result.data.order_url, // Lưu order_url để frontend redirect
+                qrCode: result.data.qr_code // Lưu QR code nếu cần
             };
             await booking.save();
         }
 
-        return result.data;
+        // Trả về response với đầy đủ thông tin
+        return {
+            ...result.data,
+            // Đảm bảo có order_url để frontend redirect
+            order_url: result.data.order_url || result.data.orderUrl,
+            // QR code nếu cần hiển thị
+            qr_code: result.data.qr_code
+        };
     }
     catch (error) {
         throw new Error('Error creating Zalopay order: ' + error.message);
