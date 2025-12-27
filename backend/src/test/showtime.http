@@ -1,0 +1,48 @@
+@baseUrl = http://localhost:3000/api
+@baseUrlV1 = http://localhost:3000/api/v1
+
+### Get All Showtimes
+GET {{baseUrlV1}}/showtimes
+
+### Get Showtimes by Movie
+GET {{baseUrlV1}}/showtimes?movieId=693522f1ac9357d6f3874436
+
+### Get Showtimes by Cinema
+GET {{baseUrlV1}}/showtimes?cinemaId=6944be92946fe3fc1e3fab08
+
+### Get Showtimes by Date
+GET {{baseUrlV1}}/showtimes?date=2025-12-20
+
+### Get Showtimes by Movie and Date
+GET {{baseUrlV1}}/showtimes?movieId=693522f1ac9357d6f3874436&date=2025-12-20
+
+### Get Showtimes by Cinema and Date
+GET {{baseUrlV1}}/showtimes?cinemaId=6944be92946fe3fc1e3fab08&date=2025-12-20
+
+### Get Showtimes by Movie, Cinema, and Date
+GET {{baseUrlV1}}/showtimes?movieId=693522f1ac9357d6f3874436&cinemaId=6944be92946fe3fc1e3fab08&date=2025-12-20
+
+### Login admin
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "",
+  "password": ""
+}
+
+### luu token vao bien
+@authToken = {{loginRequest.response.body.$.data.token}}
+
+### Create a new showtime
+# @name createShowtime
+POST {{baseUrlV1}}/showtimes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "movieId": "693522f1ac9357d6f3874442",
+    "cinemaId": "6944be92946fe3fc1e3fab08",
+    "startTime": "2025-12-25T18:30:00Z"
+}

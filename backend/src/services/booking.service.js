@@ -2,7 +2,7 @@ const Booking = require('../models/booking.model');
 const Showtime = require('../models/showtime.model');
 const mongoose = require('mongoose');
 
-// GET booking/my-booking
+// GET /api/v1/bookings
 const getBookingByUser = async (userId) => {
   return await Booking.find({ user: userId })
     .select('showtime user seat price bookedAt')
@@ -24,7 +24,7 @@ const getBookingByUser = async (userId) => {
     .sort({ bookedAt: -1 });
 };
 
-// lay ve theo id ve /booking/my-booking/:id
+// GET /api/v1/bookings/:id
 const getBookingById = async (bookingId, currentUserId) => {
   const booking = await Booking.findOne({
     _id: bookingId,
@@ -72,15 +72,23 @@ const getBookingById = async (bookingId, currentUserId) => {
   return bookData
 }
 
-const addBooking = async (userId, showtimeId, seats) => {
-  // Validate showtime exists
-  const showtime = await Showtime.findById(showtimeId);
-  if (!showtime) {
-    throw new Error('Showtime not found');
-  }
+// Hàm kiểm tra ghế có available không (bao gồm cả booking pending còn hiệu lực)
+const checkSeatsAvailable = async (showtimeId, seats) => {
+  const now = new Date();
 
-  const existingBookings = await Booking.find({ showtime: showtimeId });
-  const bookedSeats = existingBookings.flatMap((b) =>
+  // Lấy tất cả booking của showtime này (confirmed hoặc pending còn hiệu lực)
+  const activeBookings = await Booking.find({
+    showtime: showtimeId,
+    $or: [
+      { status: 'confirmed' },
+      {
+        status: 'pending',
+        holdExpiresAt: { $gt: now } // Chỉ tính booking pending còn hiệu lực
+      }
+    ]
+  });
+
+  const bookedSeats = activeBookings.flatMap((b) =>
     b.seat.map((s) => `${s.row}-${s.number}`)
   );
 
@@ -89,23 +97,67 @@ const addBooking = async (userId, showtimeId, seats) => {
     bookedSeats.includes(s)
   );
 
-  if (alreadyBooked.length > 0) {
-    throw new Error(`Seats already booked: ${alreadyBooked.join(', ')}`);
+  return {
+    available: alreadyBooked.length === 0,
+    conflictSeats: alreadyBooked
+  };
+};
+
+// Giữ ghế 5 phút (tạo booking pending với holdExpiresAt)
+const reserveSeats = async (userId, showtimeId, seats) => {
+  // Validate showtime exists
+  const showtime = await Showtime.findById(showtimeId);
+  if (!showtime) {
+    throw new Error('Showtime not found');
+  }
+
+  // Kiểm tra ghế có available không
+  const seatCheck = await checkSeatsAvailable(showtimeId, seats);
+  if (!seatCheck.available) {
+    throw new Error(`Seats already booked or reserved: ${seatCheck.conflictSeats.join(', ')}`);
   }
 
   const totalPrice = showtime.price * seats.length;
+  const now = new Date();
+  const holdExpiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 phút
 
-  seats.forEach(seat => {
-    const seatIndex = showtime.seats.findIndex(
-      s => s.row === seat.row && s.number === seat.number
-    );
-    if (seatIndex !== -1) {
-      showtime.seats[seatIndex].isBooked = true;
-    }
+  // Tạo booking với status pending và holdExpiresAt
+  const booking = new Booking({
+    user: userId,
+    showtime: showtimeId,
+    seat: seats,
+    totalPrice,
+    status: 'pending',
+    holdExpiresAt: holdExpiresAt,
+    bookedAt: now,
   });
 
-  showtime.availableSeats -= seats.length;
-  await showtime.save();
+  await booking.save();
+
+  return {
+    booking,
+    holdExpiresAt,
+    expiresInSeconds: 300 // 5 phút = 300 giây
+  };
+};
+
+// Tạo booking từ reservation (khi user ấn thanh toán)
+const addBooking = async (userId, showtimeId, seats) => {
+  // Validate showtime exists
+  const showtime = await Showtime.findById(showtimeId);
+  if (!showtime) {
+    throw new Error('Showtime not found');
+  }
+
+  // Kiểm tra ghế có available không
+  const seatCheck = await checkSeatsAvailable(showtimeId, seats);
+  if (!seatCheck.available) {
+    throw new Error(`Seats already booked or reserved: ${seatCheck.conflictSeats.join(', ')}`);
+  }
+
+  const totalPrice = showtime.price * seats.length;
+  const now = new Date();
+  const holdExpiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 phút
 
   // Create booking
   const booking = new Booking({
@@ -113,7 +165,9 @@ const addBooking = async (userId, showtimeId, seats) => {
     showtime: showtimeId,
     seat: seats,
     totalPrice,
-    bookedAt: new Date(),
+    status: 'pending', // default
+    holdExpiresAt: holdExpiresAt,
+    bookedAt: now,
   });
 
   await booking.save();
@@ -121,8 +175,53 @@ const addBooking = async (userId, showtimeId, seats) => {
   return booking;
 };
 
+const cleanupExpiredBookings = async () => {
+  const now = new Date();
+
+  // Tìm tất cả booking pending đã hết hạn
+  const expiredBookings = await Booking.find({
+    status: 'pending',
+    holdExpiresAt: { $lte: now }
+  }).populate('showtime');
+
+  let cleanedCount = 0;
+
+  for (const booking of expiredBookings) {
+    // Xóa booking khỏi database
+    await Booking.findByIdAndDelete(booking._id);
+
+    // Giải phóng ghế trong showtime (nếu showtime còn tồn tại)
+    if (booking.showtime) {
+      const showtime = booking.showtime;
+
+      // Đánh dấu ghế là available lại
+      booking.seat.forEach(seat => {
+        const seatIndex = showtime.seats.findIndex(
+          s => s.row === seat.row && s.number === seat.number
+        );
+        if (seatIndex !== -1) {
+          showtime.seats[seatIndex].isBooked = false;
+        }
+      });
+
+      // Recalculate availableSeats based on current seats state to ensure accuracy
+      const actualAvailableSeats = showtime.seats.filter(s => !s.isBooked).length;
+      showtime.availableSeats = actualAvailableSeats;
+
+      await showtime.save();
+    }
+
+    cleanedCount++;
+  }
+
+  return cleanedCount;
+};
+
 module.exports = {
   getBookingById,
   getBookingByUser,
   addBooking,
+  reserveSeats,
+  checkSeatsAvailable,
+  cleanupExpiredBookings,
 };

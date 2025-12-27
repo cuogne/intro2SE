@@ -1,3 +1,4 @@
+# @baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
 @baseUrl = http://localhost:3000/api
 
 ### Login
@@ -13,8 +14,8 @@ Content-Type: application/json
 ### luu token vao bien
 @authToken = {{loginRequest.response.body.$.data.token}}
 
-### Tao booking moi
-# @name createBooking
+### Chon suat chieu
+# @name selectShowtime
 POST {{baseUrl}}/v1/bookings
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -28,12 +29,14 @@ Content-Type: application/json
 }
 
 ### Luu bookingId tu response
-@bookingId = {{createBooking.response.body.$.data._id}}
+@bookingId = {{selectShowtime.response.body.$.data._id}}
 
-### Lay danh sach ve cua user dang login
-GET {{baseUrl}}/v1/bookings
+### Thanh toan cho booking
+# @name makePayment
+POST {{baseUrl}}/v1/payments
 Authorization: Bearer {{authToken}}
+Content-Type: application/json
 
-### Lay chi tiet 1 ve cua user
-GET {{baseUrl}}/v1/bookings/
-Authorization: Bearer {{authToken}}
+{
+  "bookingId": "{{bookingId}}"
+}

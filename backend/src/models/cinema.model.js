@@ -5,8 +5,7 @@ const cinemaSchema = new mongoose.Schema({
   address: { type: String },
   seatLayout: [{
       row: { type: String, required: true },
-      number: { type: Number, required: true },
-      type: { type: String, default: 'standard' },
+      seats: [{ type: String, required: true }]
     }],
 });
 

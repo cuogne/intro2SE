@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:3000/api/v1
+
+### get movies by query
+# @name getMovies
+GET {{baseUrl}}/movies
+Content-Type: application/json
+
+### get movies by query with status coming_soon
+# @name getMoviesByComingSoon
+GET {{baseUrl}}/movies?status=coming_soon
+Content-Type: application/json
+
+### get movies by query with pagination
+# @name getMoviesByPagination
+GET {{baseUrl}}/movies?page=2&limit=5
+Content-Type: application/json
+
+### get movie by full query
+# @name getMoviesByFullQuery
+GET {{baseUrl}}/movies?status=now_showing&page=1&limit=3
+Content-Type: application/json
+
+### get movie by id
+# @name getMovieById
+GET {{baseUrl}}/movies/693522f1ac9357d6f3874436
+Content-Type: application/json

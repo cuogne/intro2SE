@@ -4,9 +4,7 @@ const movieController = require('../controllers/movie.controller');
 const auth = require('../middleware/auth.middleware');
 const { authorizeAdmin, authorizeUser } = require('../middleware/authorization.middleware');
 
-router.get('/', movieController.getAllMovies);
-router.get('/now_showing', movieController.getNowShowingMovies);
-router.get('/coming_soon', movieController.getComingSoonMovies);
+router.get('/', movieController.getMoviesByQuery);
 router.get('/:id', movieController.getMovieById);
 
 router.post('/', auth, authorizeAdmin, movieController.createMovie);

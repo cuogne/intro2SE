@@ -1,11 +1,12 @@
 const movieService = require('../services/movie.service');
 
-const getAllMovies = async (req, res) => {
+const getMoviesByQuery = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8; // 1 page 8 bộ
+    const status = req.query.status || "now_showing"
 
-    const movies = await movieService.getAllMovies(page, limit);
+    const movies = await movieService.getMoviesByQuery(page, limit, status);
 
     // status 200 OK
     res.status(200).json({
@@ -21,50 +22,6 @@ const getAllMovies = async (req, res) => {
     });
   }
 };
-
-const getNowShowingMovies = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 8; // 1 page 8 bộ
-
-    const movies = await movieService.getNowShowingMovies(page, limit);
-
-    // status 200 OK
-    res.status(200).json({
-      success: true,
-      data: movies,
-    });
-  } catch (error) {
-    // status 500 Internal Server Error
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching now showing movies',
-      error: error.message,
-    });
-  }
-}
-
-const getComingSoonMovies = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 8; // 1 page 8 bộ
-
-    const movies = await movieService.getComingSoonMovies(page, limit);
-
-    // status 200 OK
-    res.status(200).json({
-      success: true,
-      data: movies,
-    });
-  } catch (error) {
-    // status 500 Internal Server Error
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching coming soon movies',
-      error: error.message,
-    });
-  }
-}
 
 const getMovieById = async (req, res) => {
   try {
@@ -162,9 +119,7 @@ const deleteMovie = async (req, res) => {
 };
 
 module.exports = {
-  getAllMovies,
-  getNowShowingMovies,
-  getComingSoonMovies,
+  getMoviesByQuery,
   getMovieById,
   createMovie,
   updateMovie,

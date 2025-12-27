@@ -1,18 +1,21 @@
 const showtimeService = require('../services/showtime.service');
 
-const getShowtimes = async (req, res) => {
+const getShowtimesByQuery = async (req, res) => {
     try {
-        const movie = req.query.movie;
-        const date = req.query.date;
-        const cinema = req.query.cinema;
+        const movie = req.query.movieId;
+        const date = req.query.date; // YYYY-MM-DD
+        const cinema = req.query.cinemaId;
+        const page = req.query.page || 1;
+        const limit = req.query.limit || 10;
 
-        const showtimes = await showtimeService.getShowtimes(movie, date, cinema)
+        // api/v1/showtimes?movieId=movieId&cinemaId=cinemaId&date=2025-12-18&page=1&limit=10
+        const showtimes = await showtimeService.getShowtimesByQuery(movie, date, cinema, page, limit)
         res.status(200).json({
             success: true,
             data: showtimes
         });
     }
-    catch (error){
+    catch (error) {
         res.status(500).json({
             success: false,
             message: 'Error fetching showtimes',
@@ -48,7 +51,24 @@ const getShowtimeById = async (req, res) => {
 
 const createShowtime = async (req, res) => {
     try {
-        const newShowtime = await showtimeService.createShowtime(req.body);
+        // Map API field names to model field names
+        const { movieId, cinemaId, startTime, price } = req.body;
+
+        if (!movieId || !cinemaId || !startTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'movieId, cinemaId, and startTime are required'
+            });
+        }
+
+        const showtimeData = {
+            movie: movieId,
+            cinema: cinemaId,
+            startTime,
+            ...(price && { price }) // Only include price if provided
+        };
+
+        const newShowtime = await showtimeService.createShowtime(showtimeData);
 
         res.status(201).json({
             success: true,
@@ -115,7 +135,7 @@ const deleteShowtime = async (req, res) => {
 };
 
 module.exports = {
-    getShowtimes,
+    getShowtimesByQuery,
     getShowtimeById,
     createShowtime,
     updateShowtime,
