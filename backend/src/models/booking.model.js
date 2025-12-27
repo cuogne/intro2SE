@@ -12,10 +12,25 @@ const bookingSchema = new mongoose.Schema({
 
   totalPrice: { type: Number, required: true },
 
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'cancelled'],
+    default: 'pending',
+    index: true,
+  },
+  holdExpiresAt: { type: Date, index: true }, // để auto hết hạn hold
+  paidAt: { type: Date },
+  paymentProvider: { type: String }, // 'zalopay'
+  paymentTransId: { type: String },  // app_trans_id hoặc zp_trans_id
+  paymentMeta: { type: Object },
+
   bookedAt: { type: Date, default: Date.now },
 });
 
-bookingSchema.index({ showtime: 1, 'seat.row': 1, 'seat.number': 1 }, { unique: true });
+bookingSchema.index(
+  { showtime: 1, 'seat.row': 1, 'seat.number': 1 },
+  { unique: true, partialFilterExpression: { status: { $in: ['pending', 'paid'] } } }
+);
 
 const Booking = mongoose.model('Booking', bookingSchema);
 module.exports = Booking;

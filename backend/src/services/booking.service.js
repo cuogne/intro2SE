@@ -113,6 +113,7 @@ const addBooking = async (userId, showtimeId, seats) => {
     showtime: showtimeId,
     seat: seats,
     totalPrice,
+    status: 'pending', // default
     bookedAt: new Date(),
   });
 

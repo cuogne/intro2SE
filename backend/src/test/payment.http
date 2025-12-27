@@ -1,0 +1,42 @@
+# @baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
+@baseUrl = http://localhost:3000/api
+
+### Login
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "abc123",
+  "password": "123456"
+}
+
+### luu token vao bien
+@authToken = {{loginRequest.response.body.$.data.token}}
+
+### Chon suat chieu
+# @name selectShowtime
+POST {{baseUrl}}/v1/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "showtimeId": "69458be61231ce4578f2980b",
+  "seats": [
+    { "row": "A", "number": 1 },
+    { "row": "A", "number": 2 }
+  ]
+}
+
+### Luu bookingId tu response
+@bookingId = {{selectShowtime.response.body.$.data._id}}
+
+### Thanh toan cho booking
+# @name makePayment
+POST {{baseUrl}}/v1/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "bookingId": "{{bookingId}}"
+}

@@ -305,3 +305,102 @@
 UserId sẽ được lấy từ token của user login.
 
 Tổng giá tiền sẽ được tính tự động dựa trên số ghế × giá vé của suất chiếu.
+
+### Payment APIs
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/v1/payments` | Tạo order thanh toán Zalopay từ booking | Login |
+| POST | `/api/v1/payments/callback` | Callback từ Zalopay (Zalopay tự động gọi) | No |
+
+### Thanh toán:
+
+Luồng thanh toán:
+
+User chọn phim -> chọn rạp -> chọn suất chiếu -> chọn ghế -> ấn thanh toán
+
+**Bước 1: Tạo booking**
+
+Backend tạo 1 booking với status `pending`:
+
+```bash
+POST http://localhost:3000/api/v1/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "showtimeId": "69458be61231ce4578f2980b",
+  "seats": [
+    { "row": "A", "number": 1 },
+    { "row": "A", "number": 2 }
+  ]
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "6950c8e4d3f4b2a1c4e5f678",
+    "status": "pending",
+    "totalPrice": 90000,
+    "showtime": "...",
+    "seat": [...],
+    "bookedAt": "2025-12-15T10:30:00Z"
+  }
+}
+```
+
+**Bước 2: Tạo order thanh toán**
+
+Sau khi tạo booking thành công, gửi request tạo thanh toán Zalopay:
+
+```bash
+POST http://localhost:3000/api/v1/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "bookingId": "6950c8e4d3f4b2a1c4e5f678"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "orderUrl": "https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ1NNQVJsYlhrSXpjU0NOSERXQ181akEiLCJhcHBpZCI6MTI0NzA1fQ==",
+    "orderToken": "ACSMARlbXkIzcSCNHDWC_5jA",
+    "qrCode": "00020101021226520010vn.zalopay0203001010627000503173307089089161731338580010A000000727012800069704540114998002401295460208QRIBFTTA5204739953037045405690005802VN62210817330708908916173136304409F",
+    "bookingId": "6950c8e4d3f4b2a1c4e5f678"
+  }
+}
+```
+
+**Bước 3: User thanh toán**
+
+Frontend sẽ dùng `orderUrl` để chuyển hướng người dùng đến trang thanh toán của ZaloPay.
+
+User quét QR code hoặc thanh toán trong thời gian quy định. Sau khi thanh toán thành công, ZaloPay sẽ redirect về `redirect_url` đã cấu hình (frontend URL, ví dụ: `https://yoursite.com/payment/success`).
+
+**Bước 4: Callback từ Zalopay**
+
+Backend sẽ nhận được callback từ ZaloPay tại endpoint:
+
+```bash
+POST /api/v1/payments/callback
+# Zalopay tự động gọi endpoint này, không cần Authorization header
+```
+
+Callback sẽ cập nhật trạng thái booking:
+- Nếu `return_code === 1`: Cập nhật `status: 'confirmed'` và `paidAt`
+- Nếu `return_code !== 1`: Giữ `status: 'pending'` hoặc đánh dấu failed
+
+Backend sẽ trả về `200 OK` cho Zalopay sau khi xử lý callback.
+
+**Lưu ý:**
+- Booking được tạo với `status: 'pending'`
+- Sau khi thanh toán thành công qua callback, booking được cập nhật `status: 'confirmed'` và `paidAt`
+- Nếu thanh toán thất bại hoặc timeout, booking vẫn giữ `status: 'pending'`
+- Booking với `status: 'pending'` có thể bị hủy sau một khoảng thời gian (nếu có cơ chế timeout)
