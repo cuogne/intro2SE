@@ -75,15 +75,25 @@ const createZalopayOrder = async (bookingId) => {
         bank_code: "zalopayapp", // để trống thì sẽ thanh toán thêm mấy cái khác
         //khi thanh toán xong, zalopay server sẽ POST đến url này để thông báo cho server của mình
         //Chú ý: cần dùng ngrok để public url thì Zalopay Server mới call đến được
-        callbackUrl: zalopayConfig.callbackUrl
+        callback_url: zalopayConfig.callbackUrl
     };
 
     order.mac = createMac(order, zalopayConfig.key1);
 
     try {
-        const result = await axios.post(zalopayConfig.endpoint, null, 
+        const result = await axios.post(zalopayConfig.endpoint, null,
             { params: order }
         );
+
+        if (result.data && result.data.return_code === 1) {
+            booking.paymentTransId = order.app_trans_id;
+            booking.paymentProvider = 'zalopay';
+            booking.paymentMeta = {
+                orderToken: result.data.order_token,
+                zpTransToken: result.data.zp_trans_token
+            };
+            await booking.save();
+        }
 
         return result.data;
     }
@@ -92,34 +102,17 @@ const createZalopayOrder = async (bookingId) => {
     }
 };
 
-// Verify callback từ Zalopay
-const verifyCallback = (dataStr, reqMac) => {
-    try {
-        // Tính MAC từ data string và key2
-        const mac = CryptoJS.HmacSHA256(dataStr, zalopayConfig.key2).toString();
-
-        const isValid = reqMac === mac;
-
-        if (!isValid) {
-            console.error('MAC verification failed');
-        }
-
-        return isValid;
-    } catch (error) {
-        console.error('Error verifying callback MAC:', error);
-        return false;
-    }
-};
-
 const handleCallback = async (dataStr, reqMac) => {
     try {
-        console.log('=== Zalopay Callback Received ===');
-        console.log('Data string:', dataStr);
-        console.log('MAC received:', reqMac);
+        let mac = CryptoJS.HmacSHA256(dataStr, zalopayConfig.key2).toString();
+        console.log('Computed MAC:', mac);
 
-        if (!verifyCallback(dataStr, reqMac)) {
-            console.error('MAC verification failed');
-            return { return_code: -1, return_message: 'mac not equal' };
+        if (reqMac !== mac) {
+            console.error('Invalid MAC in callback');
+            return {
+                return_code: -1,
+                return_message: "mac not equal"
+            };
         }
 
         const callbackData = JSON.parse(dataStr);
@@ -141,9 +134,9 @@ const handleCallback = async (dataStr, reqMac) => {
         }
 
         // Check thanh toán thành công
-        if (callbackData.return_code !== 1) {
-            console.error('Payment failed, return_code:', callbackData.return_code);
-            return { return_code: 1, return_message: 'payment failed' };
+        if (!callbackData.zp_trans_id) {
+            console.error('Payment failed, no zp_trans_id in callback');
+            return { return_code: 0, return_message: 'payment failed - no transaction id' };
         }
 
         // Check số tiền
