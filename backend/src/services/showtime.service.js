@@ -1,5 +1,6 @@
 const Showtime = require('../models/showtime.model')
 const Cinema = require('../models/cinema.model') // thêm dòng này
+const Booking = require('../models/booking.model')
 
 const getShowtimesByQuery = async (movie, date, cinema, page = 1, limit = 10) => {
   const filter = {}
@@ -38,9 +39,68 @@ const getShowtimesByQuery = async (movie, date, cinema, page = 1, limit = 10) =>
 }
 
 const getShowtimeById = async (id) => {
-  return await Showtime.findById(id)
+  const showtime = await Showtime.findById(id)
     .populate('movie')
     .populate('cinema');
+
+  if (!showtime) {
+    return null;
+  }
+
+  // Lấy tất cả booking active (confirmed hoặc pending còn hiệu lực)
+  const now = new Date();
+  const activeBookings = await Booking.find({
+    showtime: id,
+    $or: [
+      { status: 'confirmed' },
+      {
+        status: 'pending',
+        holdExpiresAt: { $gt: now } // Chỉ tính booking pending còn hiệu lực
+      }
+    ]
+  });
+
+  // Tạo map để đánh dấu ghế đã được book/reserve
+  const seatStatusMap = new Map();
+
+  // Đánh dấu ghế confirmed (đã thanh toán)
+  activeBookings
+    .filter(b => b.status === 'confirmed')
+    .forEach(booking => {
+      booking.seat.forEach(seat => {
+        const key = `${seat.row}-${seat.number}`;
+        seatStatusMap.set(key, 'booked');
+      });
+    });
+
+  // Đánh dấu ghế pending (đang giữ)
+  activeBookings
+    .filter(b => b.status === 'pending' && b.holdExpiresAt > now)
+    .forEach(booking => {
+      booking.seat.forEach(seat => {
+        const key = `${seat.row}-${seat.number}`;
+        if (!seatStatusMap.has(key)) {
+          seatStatusMap.set(key, 'reserved');
+        }
+      });
+    });
+
+  // cap nhat trang thai ghe trong showtime
+  const seatsWithStatus = showtime.seats.map(seat => {
+    const key = `${seat.row}-${seat.number}`;
+    const status = seatStatusMap.get(key) || 'available';
+
+    return {
+      ...seat.toObject ? seat.toObject() : seat,
+      status: status, // 'available', 'reserved', 'booked'
+      isBooked: status === 'booked' || status === 'reserved'
+    };
+  });
+
+  const showtimeObj = showtime.toObject ? showtime.toObject() : showtime;
+  showtimeObj.seats = seatsWithStatus;
+
+  return showtimeObj;
 };
 
 const createShowtime = async (showtimeData) => {

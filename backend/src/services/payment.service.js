@@ -1,9 +1,9 @@
-const https = require('https');
 const CryptoJS = require('crypto-js');
 const moment = require('moment'); // npm install moment
 const zalopayConfig = require('../config/zalopay.config');
 const Booking = require('../models/booking.model');
 const axios = require('axios');
+require('dotenv').config();
 
 // read more: https://developers.zalopay.vn/v2/general/overview.html
 
@@ -40,6 +40,13 @@ const createZalopayOrder = async (bookingId) => {
         throw new Error('Booking already paid');
     }
 
+    if (booking.status === 'pending') {
+        const now = new Date();
+        if (booking.holdExpiresAt && booking.holdExpiresAt <= now) {
+            throw new Error('Booking has expired. Please select seats again.');
+        }
+    }
+
     if (!booking.showtime || !booking.showtime.movie || !booking.showtime.cinema) {
         throw new Error('Booking data is incomplete. Please ensure showtime, movie, and cinema are populated.');
     }
@@ -60,7 +67,10 @@ const createZalopayOrder = async (bookingId) => {
 
     const description = `Thanh toán vé xem phim - ${movieTitle} tại ${cinemaName} - Suất chiếu: ${startTime}`.trim();
 
-    const embedData = JSON.stringify({ bookingId: bookingId.toString() });
+    const embed_data = {
+        //sau khi hoàn tất thanh toán sẽ đi vào link này (thường là link web thanh toán thành công của mình)
+        redirecturl: 'https://phongthuytaman.com',
+    };
 
     const transID = Math.floor(Math.random() * 1000000);
     const order = {
@@ -72,7 +82,7 @@ const createZalopayOrder = async (bookingId) => {
         embed_data: embedData,
         amount: amount,
         description: description,
-        bank_code: "zalopayapp", // để trống thì sẽ thanh toán thêm mấy cái khác
+        bank_code: "", // để trống thì sẽ thanh toán thêm mấy cái khác
         //khi thanh toán xong, zalopay server sẽ POST đến url này để thông báo cho server của mình
         //Chú ý: cần dùng ngrok để public url thì Zalopay Server mới call đến được
         callback_url: zalopayConfig.callbackUrl

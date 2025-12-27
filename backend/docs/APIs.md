@@ -1,191 +1,131 @@
 # API Documentation
 
-## Thiết kế Model
+## Base URL
 
-### Quan hệ giữa các Model
-- **User** `1 - N` **Booking**: Một user có thể đặt nhiều vé
-- **Movie** `1 - N` **Showtime**: Một bộ phim có thể có nhiều suất chiếu
-- **Cinema** `1 - N` **Showtime**: Một rạp có thể có nhiều suất chiếu
-- **Showtime** `1 - N` **Booking**: Một suất chiếu có thể có nhiều vé được đặt
-- **Booking** `N - 1` **Seat**: Một vé có thể bao gồm nhiều ghế
+```
+http://localhost:3000
+```
+
+Tất cả API endpoints đều bắt đầu với base URL trên.
 
 ---
 
-## Mô hình dữ liệu
+## Authentication
+
+### Cách sử dụng Token
+
+Hầu hết các API yêu cầu authentication. Sau khi login thành công, bạn sẽ nhận được một JWT token. Token này cần được gửi kèm trong header của mọi request yêu cầu authentication.
+
+**Format:**
+```
+Authorization: Bearer <token>
+```
+
+**Ví dụ:**
+```javascript
+headers: {
+  'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  'Content-Type': 'application/json'
+}
+```
+
+**Token Expiry:** Token có thời hạn 1 giờ. Sau khi hết hạn, cần login lại để lấy token mới.
+
+---
+
+## Data Models
 
 ### User
-- **id**: UUID do MongoDB tạo
-- **username**: Username mà user tạo để login
-- **email**: Email của user (để làm quên mật khẩu)
-- **passwordHash**: Password đã được hash trước khi lưu vào database
-- **role**: Vai trò của user (`admin` hoặc `user`) - phân quyền truy cập API
-- **createdAt**: Thời gian tạo tài khoản
-- **updatedAt**: Thời gian cập nhật tài khoản gần nhất (cập nhật email, password)
+```typescript
+{
+  _id: string;           // MongoDB ObjectId
+  username: string;       // Unique
+  email: string;          // Unique
+  password: string;       // Hashed (không trả về trong response)
+  role: 'admin' | 'user'; // Mặc định: 'user'
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 > **Lưu ý**: Hiện tại lúc tạo tài khoản quyền luôn là `user`, còn `admin` sẽ được tạo thủ công trong database.
 
 ### Movie
-- **id**: UUID do MongoDB tạo
-- **title**: Tên bộ phim
-- **durationMinutes**: Thời lượng phim (phút)
-- **genres**: Mảng thể loại phim (Action, Comedy, ...)
-- **releaseDate**: Ngày phát hành
-- **posterImg**: Link poster phim
-- **trailerLink**: Link trailer phim (YouTube)
-- **description**: Mô tả phim
-- **status**: Trạng thái phim
-  - `now_showing`: Đang chiếu
-  - `coming_soon`: Sắp chiếu
-  - `ended`: Hết chiếu
-
-### Cinema
-- **id**: UUID do MongoDB tạo
-- **name**: Tên rạp
-- **address**: Địa chỉ rạp
-- **seatLayout**: Mảng biểu diễn sơ đồ ghế ở mỗi rạp
-  - Ví dụ cấu trúc:
-    ```javascript
-    rows: [
-      { row: "A", seats: [{ number: 1 }, { number: 2 }, ...] },
-      { row: "B", seats: [{ number: 1 }, { number: 2 }, ...] }
-    ]
-    ```
-
-### Showtime
-- **id**: UUID do MongoDB tạo
-- **movieId**: ID của bộ phim (liên kết với Movie)
-- **cinemaId**: ID của rạp (liên kết với Cinema)
-- **startTime**: Thời gian bắt đầu chiếu (bao gồm cả ngày và giờ)
-- **price**: Giá vé cho suất chiếu
-- **totalSeats**: Tổng số ghế của suất chiếu
-- **availableSeats**: Số lượng ghế còn trống
-- **seats**: Mảng các ghế của suất chiếu (khi tạo suất chiếu, ghế được tạo dựa trên seatLayout của rạp)
-  - **row**: Ký hiệu hàng (ví dụ: "A")
-  - **number**: Số ghế trong hàng (ví dụ: 1)
-  - **isBooked**: Trạng thái ghế (`true`/`false`)
-
-### Booking
-- **id**: UUID do MongoDB tạo
-- **userId**: ID của user đặt vé (liên kết với User)
-- **showtimeId**: ID của suất chiếu (liên kết với Showtime)
-- **seats**: Mảng các ghế được đặt
-  - **row**: Ký hiệu hàng (ví dụ: "A")
-  - **number**: Số ghế trong hàng (ví dụ: 1)
-- **totalPrice**: Tổng giá tiền (số ghế × giá vé)
-- **bookingTime**: Thời gian đặt vé (timestamp)
-
----
-
-## JSON mẫu (Model Examples - Không phải Response)
-
-### Movie Model
-```javascript
+```typescript
 {
-  id: "uuid-movie-1234",
-  title: "Inception",
-  durationMinutes: 148,
-  genres: ["Action", "Sci-Fi"],
-  releaseDate: "2010-07-16",
-  posterImg: "https://linktoimage.com/inception.jpg",
-  trailerLink: "https://youtube.com/trailer-inception",
-  description: "A thief who steals corporate secrets through the use of dream-sharing technology...",
-  status: "now_showing"
+  _id: string;
+  title: string;
+  minutes: number;        // Thời lượng phim (phút)
+  genre: string[];        // Mảng thể loại
+  releaseDate: Date;      // Optional
+  posterImg: string;      // URL poster
+  trailerLink: string;    // URL trailer YouTube
+  description: string;    // Optional
+  status: 'now_showing' | 'coming_soon' | 'ended';
 }
 ```
 
 ### Cinema
-```javascript
+```typescript
 {
-  id: "uuid-cinema-5678",
-  name: "Cinemax Sinh Viên",
-  address: "Nhà văn hóa sinh viên, TP.HCM",
-  "seatLayout": [
-        {
-            "row": "A",
-            "seats": ["A1", "A2", "A3", "A4", "A5"]
-        },
-        {
-            "row": "B",
-            "seats": ["B1", "B2", "B3", "B4", "B5"]
-        },
-        {
-            "row": "C",
-            "seats": ["C1", "C2", "C3", "C4", "C5"]
-        },
-        {
-            "row": "D",
-            "seats": ["D1", "D2", "D3", "D4", "D5"]
-        },
-        {
-            "row": "E",
-            "seats": ["E1", "E2", "E3", "E4", "E5"]
-        }
-    ]
-}
-```
-
-### User
-```javascript
-{
-  id: "uuid-user-91011",
-  username: "abc123",
-  email: "abc123@example.com",
-  password: "hashedpassword123",  // để làm mẫu, không trả về trong response
-  role: "user",
-  createdAt: "2024-01-01T12:00:00Z",
-  updatedAt: "2024-01-01T12:00:00Z"
+  _id: string;
+  name: string;
+  address: string;
+  seatLayout: Array<{
+    row: string;          // Ví dụ: "A", "B", "C"
+    seats: string[];      // Ví dụ: ["A1", "A2", "A3"]
+  }>;
 }
 ```
 
 ### Showtime
-```javascript
+```typescript
 {
-  id: "uuid-showtime-1213",
-  movieId: "uuid-movie-1234",           // Phim: Inception
-  cinemaId: "uuid-cinema-5678",         // Rạp: Cinemax Sinh Viên
-  startTime: "2025-12-15T19:30:00Z",    // 15/12/2025 19:30
-  price: 45000,
-  totalSeats: 6,
-  availableSeats: 4,
-  seats: [
-    { row: "A", number: 1, isBooked: false },
-    { row: "A", number: 2, isBooked: true },
-    { row: "A", number: 3, isBooked: true },
-    { row: "B", number: 1, isBooked: false },
-    { row: "B", number: 2, isBooked: false },
-    { row: "B", number: 3, isBooked: false }
-  ]
+  _id: string;
+  movie: Movie | string;  // ObjectId hoặc populated object
+  cinema: Cinema | string;
+  startTime: Date;        // ISO 8601 format
+  price: number;          // Giá vé (mặc định: 45000)
+  totalSeats: number;
+  availableSeats: number;
+  seats: Array<{
+    row: string;
+    number: number;
+    isBooked: boolean;
+    status?: 'available' | 'reserved' | 'booked'; // Chỉ có khi get showtime by id
+  }>;
 }
 ```
 
 ### Booking
-```javascript
+```typescript
 {
-  id: "uuid-booking-1415",
-  userId: "uuid-user-91011",            // User: abc123
-  showtimeId: "uuid-showtime-1213",     // Inception tại Cinemax Sinh Viên, 15/12/2025 19:30
-  seats: [
-    { row: "A", number: 2 },
-    { row: "A", number: 3 }
-  ],
-  totalPrice: 90000,                    // 2 ghế × 45000
-  bookingTime: "2025-12-13T10:37:50Z"
+  _id: string;
+  showtime: Showtime | string;
+  user: User | string;
+  seat: Array<{
+    row: string;
+    number: number;
+  }>;
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  holdExpiresAt: Date;    // Thời gian hết hạn giữ ghế (chỉ có khi status = 'pending')
+  paidAt: Date;           // Thời gian thanh toán (chỉ có khi status = 'confirmed')
+  paymentProvider: string; // 'zalopay'
+  paymentTransId: string; // Transaction ID từ Zalopay
+  paymentMeta: object;    // Metadata thanh toán
+  bookedAt: Date;
 }
 ```
 
 ---
 
 ## API Endpoints
-
 ### User APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | `/api/auth/register` | Đăng ký tài khoản mới (username, email, password) | No |
 | POST | `/api/auth/login` | Đăng nhập và nhận token | No |
-| GET | `/api/auth/profile` | Lấy thông tin profile của user | Login |
-| PUT | `/api/auth/profile` | Cập nhật thông tin profile (chỉ cập nhật email) | Login |
-| POST | `/api/auth/change-password` | Đổi mật khẩu | Login |
-| POST | `/api/auth/forgot-password` | Nhập đúng email, gửi mã xác nhận tới email lấy lại mật khẩu | No |
 
 ### Movie APIs
 | Method | Endpoint | Description | Auth Required |
@@ -204,6 +144,7 @@
 | POST | `/api/v1/cinemas` | Thêm rạp mới | Admin only |
 | PUT | `/api/v1/cinemas/:id` | Cập nhật thông tin rạp | Admin only |
 | DELETE | `/api/v1/cinemas/:id` | Xoá rạp | Admin only |
+
 ### Showtime APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
@@ -219,92 +160,7 @@
 | GET | `/api/v1/bookings` | Lấy danh sách vé đã đặt của user | Login |
 | GET | `/api/v1/bookings/:id` | Lấy chi tiết vé đã đặt theo id | Login |
 | POST | `/api/v1/bookings` | Đặt vé mới | Login |
-
-### Tạo mới dữ liệu
-
-1. Khi thêm thông tin 1 bộ phim thì cần cung cấp đầy đủ các trường sau trong body của request (phải login với quyền admin):
-```javascript
-// POST /api/v1/movies
-{
-  "title": "Inception",
-  "durationMinutes": 148,
-  "genres": ["Action", "Sci-Fi"],
-  "releaseDate": "2010-07-16",
-  "posterImg": "https://linktoimage.com/inception.jpg",
-  "trailerLink": "https://youtube.com/trailer-inception",
-  "description": "A thief who steals corporate secrets through the use of dream-sharing technology...",
-  "status": "now_showing"
-}
-```
-
-2. Thêm mới 1 rạp phim thì cần cung cấp đầy đủ các trường sau trong body của request (phải login với quyền admin):
-```javascript
-// POST /api/v1/cinemas
-{
-  "name": "Cinemax Sinh Viên",
-  "address": "Nhà văn hóa sinh viên, TP.HCM",
-  "seatLayout": [
-        {
-            "row": "A",
-            "seats": ["A1", "A2", "A3", "A4", "A5"]
-        },
-        {
-            "row": "B",
-            "seats": ["B1", "B2", "B3", "B4", "B5"]
-        },
-        {
-            "row": "C",
-            "seats": ["C1", "C2", "C3", "C4", "C5"]
-        },
-        {
-            "row": "D",
-            "seats": ["D1", "D2", "D3", "D4", "D5"]
-        },
-        {
-            "row": "E",
-            "seats": ["E1", "E2", "E3", "E4", "E5"]
-        }
-    ]
-}
-```
-
-3. Thêm 1 tài khoản user mới: (role mặc định cho các tài khoản này sẽ là `user`)
-```javascript
-// POST /api/auth/register
-{
-  "username": "abc123",
-  "email": "abc123@gmail.com",
-  "password": "password123"
-}
-```
-
-4. Tạo mới một suất chiếu phim: (phải login với quyền admin)
-```javascript
-// POST /api/v1/showtimes
-{
-  "movieId": "693522f1ac9357d6f3874442", // Phim Avatar 3
-  "cinemaId": "6944be92946fe3fc1e3fab08", // Rạp Cinemax Sinh Viên
-  "startTime": "2025-12-25T18:30:00Z" // 25/12/2025 18:30
-}
-```
-
-(Layout ghế sẽ tự động được tạo dựa trên seatLayout của rạp và được set isBooked = false cho tất cả ghế)
-
-5. Đặt vé cho một suất chiếu: (khách hàng phải login)
-```javascript
-// POST /api/v1/bookings
-{
-  "showtimeId": "uuid-showtime-1213",     // ID của suất chiếu
-  "seats": [                              // Mảng ghế muốn đặt
-    { "row": "A", "number": 2 },
-    { "row": "A", "number": 3 }
-  ]
-}
-```
-
-UserId sẽ được lấy từ token của user login.
-
-Tổng giá tiền sẽ được tính tự động dựa trên số ghế × giá vé của suất chiếu.
+| POST | `/api/v1/bookings/reserve` | Giữ ghế 5 phút | Login |
 
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
@@ -312,23 +168,451 @@ Tổng giá tiền sẽ được tính tự động dựa trên số ghế × gi
 | POST | `/api/v1/payments` | Tạo order thanh toán Zalopay từ booking | Login |
 | POST | `/api/v1/payments/callback` | Callback từ Zalopay (Zalopay tự động gọi) | No |
 
-### Thanh toán:
+### 1. Authentication APIs
 
-Luồng thanh toán:
+#### 1.1. Đăng ký tài khoản
 
-User chọn phim -> chọn rạp -> chọn suất chiếu -> chọn ghế -> ấn thanh toán
+**Endpoint:** `POST /api/auth/register`
 
-**Bước 1: Tạo booking**
+**Authentication:** Không cần
 
-Backend tạo 1 booking với status `pending`:
+**Mô tả:** API này dùng để đăng ký tài khoản mới.
 
-```bash
-POST http://localhost:3000/api/v1/bookings
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
+**Request Body:**
+```json
 {
-  "showtimeId": "69458be61231ce4578f2980b",
+  "username": "john_doe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "username": "john_doe",
+      "email": "john@example.com",
+      "role": "user"
+    }
+  }
+}
+```
+
+---
+
+#### 1.2. Đăng nhập
+
+**Endpoint:** `POST /api/auth/login`
+
+**Authentication:** Không cần
+
+**Mô tả:** API này dùng để đăng nhập và nhận token.
+
+**Request Body:**
+```json
+{
+  "username": "john_doe",
+  "password": "password123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "username": "john_doe",
+      "email": "john@example.com",
+      "role": "user"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+Token này sẽ được lưu lại vào cookie của browser để sử dụng cho các request sau này.
+
+---
+
+### 2. Movie APIs
+
+#### 2.1. Lấy danh sách phim
+
+**Endpoint:** `GET /api/v1/movies`
+
+**Authentication:** Không cần
+
+**Mô tả:** API này dùng để lấy danh sách tất cả các phim kèm với điều kiện tương ứng
+
+**Query Parameters:**
+- `page` (number, optional): Số trang (mặc định: 1)
+- `limit` (number, optional): Số phim mỗi trang (mặc định: 8)
+- `status` (string, optional): Trạng thái phim - `now_showing`, `coming_soon`, `ended` (mặc định: `now_showing`)
+
+**Example Request:**
+```
+GET /api/v1/movies?status=now_showing&page=1&limit=8
+```
+
+**Response (200 OK):**
+```json
+// GET /api/v1/movies?status=now_showing&page=1&limit=8
+{
+  "success": true,
+  "data": {
+    "movies": [
+      {
+        "_id": "507f1f77bcf86cd799439011",
+        "title": "Inception",
+        "minutes": 148,
+        "genre": ["Action", "Sci-Fi"],
+        "releaseDate": "2010-07-16T00:00:00.000Z",
+        "posterImg": "https://example.com/poster.jpg",
+        "trailerLink": "https://youtube.com/watch?v=...",
+        "description": "A thief who steals corporate secrets...",
+        "status": "now_showing"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 8,
+      "total": 25,
+      "totalPages": 4
+    }
+  }
+}
+```
+
+---
+
+#### 2.2. Lấy chi tiết phim
+
+**Endpoint:** `GET /api/v1/movies/:id`
+
+**Mô tả:** API này dùng để lấy chi tiết một bộ phim theo id.
+
+**Authentication:** Không cần
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "title": "Inception",
+    "minutes": 148,
+    "genre": ["Action", "Sci-Fi"],
+    "releaseDate": "2010-07-16T00:00:00.000Z",
+    "posterImg": "https://example.com/poster.jpg",
+    "trailerLink": "https://youtube.com/watch?v=...",
+    "description": "A thief who steals corporate secrets...",
+    "status": "now_showing"
+  }
+}
+```
+
+---
+
+#### 2.3. Tạo phim mới (Admin only)
+
+**Endpoint:** `POST /api/v1/movies`
+
+**Mô tả:** API này dùng để tạo phim mới (chỉ dành cho admin).
+
+**Authentication:** Required (Admin only)
+
+**Request Body:**
+```json
+{
+  "title": "Inception",
+  "minutes": 148,
+  "genre": ["Action", "Sci-Fi"],
+  "releaseDate": "2010-07-16",
+  "posterImg": "https://example.com/poster.jpg",
+  "trailerLink": "https://youtube.com/watch?v=...",
+  "description": "A thief who steals corporate secrets...",
+  "status": "now_showing"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "title": "Inception",
+    ...
+  }
+}
+```
+
+---
+
+#### 2.4. Cập nhật phim (Admin only)
+
+**Endpoint:** `PUT /api/v1/movies/:id`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để cập nhật thông tin phim (chỉ dành cho admin).
+
+**Request Body:** (Tương tự như tạo phim, chỉ cần gửi các field muốn cập nhật)
+
+---
+
+#### 2.5. Xóa phim (Admin only)
+
+**Endpoint:** `DELETE /api/v1/movies/:id`
+
+**Mô tả:** API này dùng để xoá phim (chỉ dành cho admin).
+
+**Authentication:** Required (Admin only)
+
+---
+
+### 3. Cinema APIs
+
+#### 3.1. Lấy danh sách rạp
+
+**Endpoint:** `GET /api/v1/cinemas`
+
+**Authentication:** Không cần
+
+**Mô tả:** API này dùng để lấy danh sách tất cả các rạp.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "name": "Cinemax Sinh Viên",
+      "address": "Nhà văn hóa sinh viên, TP.HCM",
+      "seatLayout": [
+        {
+          "row": "A",
+          "seats": ["A1", "A2", "A3", "A4", "A5"]
+        },
+        {
+          "row": "B",
+          "seats": ["B1", "B2", "B3", "B4", "B5"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+#### 3.2. Lấy chi tiết rạp
+
+**Endpoint:** `GET /api/v1/cinemas/:id`
+
+**Mô tả:** API này dùng để lấy chi tiết một rạp theo id.
+
+**Authentication:** Không cần
+
+---
+
+#### 3.3. Tạo rạp mới (Admin only)
+
+**Endpoint:** `POST /api/v1/cinemas`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để tạo rạp mới kèm với layout ghế (chỉ dành cho admin).
+
+**Request Body:**
+```json
+{
+  "name": "Cinemax Sinh Viên",
+  "address": "Nhà văn hóa sinh viên, TP.HCM",
+  "seatLayout": [
+    {
+      "row": "A",
+      "seats": ["A1", "A2", "A3", "A4", "A5"]
+    },
+    {
+      "row": "B",
+      "seats": ["B1", "B2", "B3", "B4", "B5"]
+    }
+  ]
+}
+```
+
+---
+
+### 4. Showtime APIs
+
+#### 4.1. Lấy danh sách suất chiếu
+
+**Endpoint:** `GET /api/v1/showtimes`
+
+**Mô tả:** API này dùng để lấy danh sách tất cả các suất chiếu kèm với điều kiện tương ứng
+
+**Authentication:** Không cần
+
+**Query Parameters:**
+- `movieId` (string, optional): Lọc theo phim
+- `cinemaId` (string, optional): Lọc theo rạp
+- `date` (string, optional): Lọc theo ngày (format: `YYYY-MM-DD`)
+- `page` (number, optional): Số trang (mặc định: 1)
+- `limit` (number, optional): Số suất chiếu mỗi trang (mặc định: 10)
+
+**Example Request:**
+```
+GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&limit=10
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "docs": [
+      {
+        "_id": "507f1f77bcf86cd799439013",
+        "startTime": "2025-12-25T18:30:00.000Z",
+        "price": 45000,
+        "totalSeats": 25,
+        "availableSeats": 20,
+        "movie": {
+          "_id": "507f1f77bcf86cd799439011",
+          "title": "Inception",
+          "minutes": 148,
+          "posterImg": "https://example.com/poster.jpg",
+          "status": "now_showing"
+        },
+        "cinema": {
+          "_id": "507f1f77bcf86cd799439012",
+          "name": "Cinemax Sinh Viên",
+          "address": "Nhà văn hóa sinh viên, TP.HCM"
+        }
+      }
+    ],
+    "totalDocs": 5,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+#### 4.2. Lấy chi tiết suất chiếu (với trạng thái ghế)
+
+**Endpoint:** `GET /api/v1/showtimes/:id`
+
+**Authentication:** Không cần
+
+**Mô tả:** API này dùng để lấy chi tiết một suất chiếu theo id với trạng thái ghế.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439013",
+    "movie": {
+      "_id": "507f1f77bcf86cd799439011",
+      "title": "Inception",
+      "minutes": 148,
+      "genre": ["Action", "Sci-Fi"],
+      "releaseDate": "2010-07-16T00:00:00.000Z",
+      "posterImg": "https://example.com/poster.jpg",
+      "trailerLink": "https://youtube.com/watch?v=...",
+      "description": "...",
+      "status": "now_showing"
+    },
+    "cinema": {
+      "_id": "507f1f77bcf86cd799439012",
+      "name": "Cinemax Sinh Viên",
+      "address": "Nhà văn hóa sinh viên, TP.HCM",
+      "seatLayout": [...]
+    },
+    "startTime": "2025-12-25T18:30:00.000Z",
+    "price": 45000,
+    "totalSeats": 25,
+    "availableSeats": 20,
+    "seats": [
+      {
+        "row": "A",
+        "number": 1,
+        "isBooked": false,
+        "status": "available"
+      },
+      {
+        "row": "A",
+        "number": 2,
+        "isBooked": true,
+        "status": "reserved"  // Đang được giữ (pending booking còn hiệu lực)
+      },
+      {
+        "row": "A",
+        "number": 3,
+        "isBooked": true,
+        "status": "booked"    // Đã thanh toán (confirmed)
+      }
+    ]
+  }
+}
+```
+
+**Trạng thái ghế:**
+- `available`: Ghế trống, có thể chọn
+- `reserved`: Ghế đang được giữ (có booking pending còn hiệu lực trong 5 phút)
+- `booked`: Ghế đã được thanh toán (confirmed)
+
+---
+
+#### 4.3. Tạo suất chiếu mới (Admin only)
+
+**Endpoint:** `POST /api/v1/showtimes`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để tạo suất chiếu mới cho một bộ phim ở 1 rạp nào đó (chỉ dành cho admin).
+
+**Request Body:**
+```json
+{
+  "movieId": "507f1f77bcf86cd799439011",
+  "cinemaId": "507f1f77bcf86cd799439012",
+  "startTime": "2025-12-25T18:30:00.000Z",
+  "price": 45000
+}
+```
+
+**Lưu ý:** 
+- `price` là optional (mặc định: 45000)
+- Ghế sẽ tự động được tạo dựa trên `seatLayout` của rạp và được set isBooked = false cho tất cả ghế
+
+---
+
+### 5. Booking APIs
+
+#### 5.1. Giữ ghế 5 phút
+
+**Endpoint:** `POST /api/v1/bookings/reserve`
+
+**Authentication:** Required
+
+**Mô tả:** API này dùng để giữ ghế trong 5 phút. Khi user chọn ghế trên UI, gọi API này để tạo booking với status `pending` và `holdExpiresAt`.
+
+**Request Body:**
+```json
+{
+  "showtimeId": "507f1f77bcf86cd799439013",
   "seats": [
     { "row": "A", "number": 1 },
     { "row": "A", "number": 2 }
@@ -336,71 +620,235 @@ Content-Type: application/json
 }
 ```
 
-Response:
+**Response (201 Created):**
 ```json
 {
   "success": true,
   "data": {
-    "_id": "6950c8e4d3f4b2a1c4e5f678",
-    "status": "pending",
+    "bookingId": "507f1f77bcf86cd799439014",
+    "holdExpiresAt": "2025-12-25T10:35:00.000Z",
+    "expiresInSeconds": 300,
+    "message": "Seats reserved for 5 minutes"
+  }
+}
+```
+
+**Lưu ý quan trọng:**
+- Ghế sẽ được giữ trong **5 phút** (300 giây)
+- Sau 5 phút, nếu không thanh toán, booking sẽ tự động bị xóa và ghế được giải phóng
+- Frontend nên hiển thị countdown timer dựa trên `holdExpiresAt`
+- Nếu user muốn thanh toán, sử dụng `bookingId` này để tạo payment order
+
+---
+
+#### 5.2. Tạo booking (Khi user ấn thanh toán)
+
+**Endpoint:** `POST /api/v1/bookings`
+
+**Authentication:** Required
+
+**Mô tả:** API này tạo booking mới với status `pending` và `holdExpiresAt`. Thường được dùng khi user chọn ghế và ấn thanh toán ngay (không qua bước reserve).
+
+**Request Body:**
+```json
+{
+  "showtimeId": "507f1f77bcf86cd799439013",
+  "seats": [
+    { "row": "A", "number": 1 },
+    { "row": "A", "number": 2 }
+  ]
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439014",
+    "showtime": "507f1f77bcf86cd799439013",
+    "user": "507f1f77bcf86cd799439015",
+    "seat": [
+      { "row": "A", "number": 1 },
+      { "row": "A", "number": 2 }
+    ],
     "totalPrice": 90000,
-    "showtime": "...",
-    "seat": [...],
-    "bookedAt": "2025-12-15T10:30:00Z"
+    "status": "pending",
+    "holdExpiresAt": "2025-12-25T10:35:00.000Z",
+    "bookedAt": "2025-12-25T10:30:00.000Z"
   }
 }
 ```
 
-**Bước 2: Tạo order thanh toán**
+---
 
-Sau khi tạo booking thành công, gửi request tạo thanh toán Zalopay:
+#### 5.3. Lấy danh sách booking của user
 
-```bash
-POST http://localhost:3000/api/v1/payments
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
+**Endpoint:** `GET /api/v1/bookings`
 
+**Authentication:** Required (Login)
+
+**Mô tả:** API này dùng để lấy danh sách các vé đã đặt của user (và user phải login)
+
+**Response (200 OK):**
+```json
 {
-  "bookingId": "6950c8e4d3f4b2a1c4e5f678"
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439014",
+      "showtime": {
+        "_id": "507f1f77bcf86cd799439013",
+        "movie": {
+          "_id": "507f1f77bcf86cd799439011",
+          "title": "Inception",
+          "minutes": 148
+        },
+        "cinema": {
+          "_id": "507f1f77bcf86cd799439012",
+          "name": "Cinemax Sinh Viên",
+          "address": "Nhà văn hóa sinh viên, TP.HCM"
+        },
+        "startTime": "2025-12-25T18:30:00.000Z",
+        "price": 45000
+      },
+      "user": {
+        "_id": "507f1f77bcf86cd799439015",
+        "username": "john_doe"
+      },
+      "seat": [
+        { "row": "A", "number": 1 },
+        { "row": "A", "number": 2 }
+      ],
+      "totalPrice": 90000,
+      "bookedAt": "2025-12-25T10:30:00.000Z"
+    }
+  ]
 }
 ```
 
-Response:
+---
+
+#### 5.4. Lấy chi tiết booking
+
+**Endpoint:** `GET /api/v1/bookings/:id`
+
+**Authentication:** Required
+
+**Mô tả:** API này dùng để lấy chi tiết một vé đã đặt theo id.
+
+**Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
-    "orderUrl": "https://qcgateway.zalopay.vn/openinapp?order=eyJ6cHRyYW5zdG9rZW4iOiJBQ1NNQVJsYlhrSXpjU0NOSERXQ181akEiLCJhcHBpZCI6MTI0NzA1fQ==",
-    "orderToken": "ACSMARlbXkIzcSCNHDWC_5jA",
-    "qrCode": "00020101021226520010vn.zalopay0203001010627000503173307089089161731338580010A000000727012800069704540114998002401295460208QRIBFTTA5204739953037045405690005802VN62210817330708908916173136304409F",
-    "bookingId": "6950c8e4d3f4b2a1c4e5f678"
+    "id": "507f1f77bcf86cd799439014",
+    "user": "john_doe",
+    "movie": "Inception",
+    "cinema": "Cinemax Sinh Viên",
+    "address": "Nhà văn hóa sinh viên, TP.HCM",
+    "startTime": "2025-12-25T18:30:00.000Z",
+    "totalPrice": 90000,
+    "seat": ["A - 1", "A - 2"],
+    "quantity": 2,
+    "bookedAt": "2025-12-25T10:30:00.000Z"
   }
 }
 ```
 
-**Bước 3: User thanh toán**
+---
 
-Frontend sẽ dùng `orderUrl` để chuyển hướng người dùng đến trang thanh toán của ZaloPay.
+### 6. Payment APIs
 
-User quét QR code hoặc thanh toán trong thời gian quy định. Sau khi thanh toán thành công, ZaloPay sẽ redirect về `redirect_url` đã cấu hình (frontend URL, ví dụ: `https://yoursite.com/payment/success`).
+#### 6.1. Tạo order thanh toán Zalopay
 
-**Bước 4: Callback từ Zalopay**
+**Endpoint:** `POST /api/v1/payments`
 
-Backend sẽ nhận được callback từ ZaloPay tại endpoint:
+**Authentication:** Required
 
-```bash
-POST /api/v1/payments/callback
-# Zalopay tự động gọi endpoint này, không cần Authorization header
+**Mô tả:** Tạo order thanh toán Zalopay từ booking. Booking phải có status `pending` và còn hiệu lực (chưa hết hạn 5 phút).
+
+**Request Body:**
+```json
+{
+  "bookingId": "507f1f77bcf86cd799439014"
+}
 ```
 
-Callback sẽ cập nhật trạng thái booking:
-- Nếu `return_code === 1`: Cập nhật `status: 'confirmed'` và `paidAt`
-- Nếu `return_code !== 1`: Giữ `status: 'pending'` hoặc đánh dấu failed
-
-Backend sẽ trả về `200 OK` cho Zalopay sau khi xử lý callback.
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "return_code": 1,
+    "return_message": "success",
+    "order_url": "https://qcgateway.zalopay.vn/openinapp?order=...",
+    "order_token": "ACSMARlbXkIzcSCNHDWC_5jA",
+    "zp_trans_token": "...",
+    "qr_code": "00020101021226520010vn.zalopay..."
+  }
+}
+```
 
 **Lưu ý:**
-- Booking được tạo với `status: 'pending'`
-- Sau khi thanh toán thành công qua callback, booking được cập nhật `status: 'confirmed'` và `paidAt`
-- Nếu thanh toán thất bại hoặc timeout, booking vẫn giữ `status: 'pending'`
-- Booking với `status: 'pending'` có thể bị hủy sau một khoảng thời gian (nếu có cơ chế timeout)
+- Nếu booking đã hết hạn (quá 5 phút), sẽ trả về lỗi và không tạo được order thanh toán
+- Frontend sẽ sử dụng `order_url` để chuyển hướng người dùng đến trang thanh toán của ZaloPay.
+---
+
+#### 6.2. Callback từ Zalopay
+
+**Endpoint:** `POST /api/v1/payments/callback`
+
+**Authentication:** Không cần (Zalopay tự động gọi, không cần code để gọi tới API này)
+
+**Mô tả:** Endpoint này được Zalopay tự động gọi sau khi thanh toán thành công. Backend sẽ tự động cập nhật booking status thành `confirmed`.
+
+**Request Body (từ Zalopay):**
+```json
+{
+  "data": "{\"app_trans_id\":\"251225_123456\",\"zp_trans_id\":\"...\",\"amount\":90000,...}",
+  "mac": "abc123..."
+}
+```
+
+**Response:**
+```json
+{
+  "return_code": 1,
+  "return_message": "success"
+}
+```
+
+**Lưu ý:** Frontend không cần gọi API này. Đây là webhook từ Zalopay.
+
+Để chạy được, hãy cài `ngrok` [https://ngrok.com/] và lấy token, sau đó sử dụng
+```zsh
+ngrok http 3000
+```
+
+để ngrok có thể chuyển localhost thành địa chỉ public để zalopay có thể callback lại, ae có địa chỉ này thì dán vào .env ở cái ZALOPAY_CALLBACK_URL nhé. Ngoài ra ae có thể sử dụng redirecturl và thêm nó vào trong .env để chuyển hướng người dùng đến trang thanh toán thành công của mình
+
+Tài khoản Zalopay Sandbox để test chuyển khoản VISA: 4111 1111 1111 1111
+
+AE có thể đọc thêm doc của Zalopay tại đây: https://developers.zalopay.vn/v2/general/overview.html
+
+---
+
+### Flow của API
+1. User đăng kí tài khoản và login (POST /api/auth/register và POST /api/auth/login)
+2. User chọn phim, rạp, suất chiếu và ghế (GET /api/v1/movies, GET /api/v1/cinemas, GET /api/v1/showtimes)
+3. User ấn thanh toán (POST /api/v1/bookings)
+4. Backend tạo booking với status `pending` và `holdExpiresAt` (POST /api/v1/bookings)
+5. Backend tạo order thanh toán Zalopay (POST /api/v1/payments) và frontend sẽ chuyển hướng người dùng đến trang thanh toán của ZaloPay.
+6. User thanh toán và Zalopay sẽ tự động gọi callback tới API này (POST /api/v1/payments/callback)
+7. Backend cập nhật booking status thành `confirmed` (POST /api/v1/payments/callback)
+
+### HTTP Status Codes
+
+- `200 OK`: Request thành công
+- `201 Created`: Tạo resource thành công
+- `400 Bad Request`: Request không hợp lệ (thiếu field, validation error, etc.)
+- `401 Unauthorized`: Không có token hoặc token không hợp lệ
+- `403 Forbidden`: Không có quyền truy cập (ví dụ: user thường không thể tạo phim)
+- `404 Not Found`: Resource không tồn tại
+- `500 Internal Server Error`: Lỗi server
