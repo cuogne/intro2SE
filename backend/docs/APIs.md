@@ -124,49 +124,49 @@ headers: {
 ### User APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | `/api/auth/register` | Đăng ký tài khoản mới (username, email, password) | No |
-| POST | `/api/auth/login` | Đăng nhập và nhận token | No |
+| POST | [`/api/auth/register`](#11-đăng-ký-tài-khoản) | Đăng ký tài khoản mới (username, email, password) | No |
+| POST | [`/api/auth/login`](#12-đăng-nhập) | Đăng nhập và nhận token | No |
 
 ### Movie APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/api/v1/movies` | Lấy danh sách tất cả phim<br>Query params: `?page=&limit=&status=` | No |
-| GET | `/api/v1/movies/:id` | Lấy chi tiết phim theo id | No |
-| POST | `/api/v1/movies` | Thêm phim mới | Admin only |
-| PUT | `/api/v1/movies/:id` | Cập nhật thông tin phim | Admin only |
-| DELETE | `/api/v1/movies/:id` | Xoá phim | Admin only |
+| GET | [`/api/v1/movies`](#21-lấy-danh-sách-phim) | Lấy danh sách tất cả phim<br>Query params: `?page=&limit=&status=` | No |
+| GET | [`/api/v1/movies/:id`](#22-lấy-chi-tiết-phim) | Lấy chi tiết phim theo id | No |
+| POST | [`/api/v1/movies`](#23-tạo-phim-mới-admin-only) | Thêm phim mới | Admin only |
+| PUT | [`/api/v1/movies/:id`](#24-cập-nhật-phim-admin-only) | Cập nhật thông tin phim | Admin only |
+| DELETE | [`/api/v1/movies/:id`](#25-xóa-phim-admin-only) | Xoá phim | Admin only |
 
 ### Cinema APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/api/v1/cinemas` | Lấy danh sách tất cả rạp | No |
-| GET | `/api/v1/cinemas/:id` | Lấy chi tiết rạp theo id | No |
-| POST | `/api/v1/cinemas` | Thêm rạp mới | Admin only |
-| PUT | `/api/v1/cinemas/:id` | Cập nhật thông tin rạp | Admin only |
-| DELETE | `/api/v1/cinemas/:id` | Xoá rạp | Admin only |
+| GET | [`/api/v1/cinemas`](#31-lấy-danh-sách-rạp) | Lấy danh sách tất cả rạp | No |
+| GET | [`/api/v1/cinemas/:id`](#32-lấy-chi-tiết-rạp) | Lấy chi tiết rạp theo id | No |
+| POST | [`/api/v1/cinemas`](#33-tạo-rạp-mới-admin-only) | Thêm rạp mới | Admin only |
+| PUT | [`/api/v1/cinemas/:id`](#34-cập-nhật-rạp-admin-only) | Cập nhật thông tin rạp | Admin only |
+| DELETE | [`/api/v1/cinemas/:id`](#35-xóa-rạp-admin-only) | Xoá rạp | Admin only |
 
 ### Showtime APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/api/v1/showtimes` | Lấy danh sách tất cả suất chiếu<br>Query params: `?movieId=&cinemaId=&date=&page=&limit=` | No |
-| GET | `/api/v1/showtimes/:id` | Lấy chi tiết suất chiếu theo id | No |
-| POST | `/api/v1/showtimes` | Thêm suất chiếu mới | Admin only |
-| PUT | `/api/v1/showtimes/:id` | Cập nhật thông tin suất chiếu | Admin only |
-| DELETE | `/api/v1/showtimes/:id` | Xoá suất chiếu | Admin only |
+| GET | [`/api/v1/showtimes`](#41-lấy-danh-sách-suất-chiếu) | Lấy danh sách tất cả suất chiếu<br>Query params: `?movieId=&cinemaId=&date=&page=&limit=` | No |
+| GET | [`/api/v1/showtimes/:id`](#42-lấy-chi-tiết-suất-chiếu-với-trạng-thái-ghế) | Lấy chi tiết suất chiếu theo id | No |
+| POST | [`/api/v1/showtimes`](#43-tạo-suất-chiếu-mới-admin-only) | Thêm suất chiếu mới | Admin only |
+| PUT | [`/api/v1/showtimes/:id`](#44-cập-nhật-suất-chiếu-admin-only) | Cập nhật thông tin suất chiếu | Admin only |
+| DELETE | [`/api/v1/showtimes/:id`](#45-xóa-suất-chiếu-admin-only) | Xoá suất chiếu | Admin only |
 
 ### Booking APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/api/v1/bookings` | Lấy danh sách vé đã đặt của user | Login |
-| GET | `/api/v1/bookings/:id` | Lấy chi tiết vé đã đặt theo id | Login |
-| POST | `/api/v1/bookings` | Đặt vé mới | Login |
-| POST | `/api/v1/bookings/reserve` | Giữ ghế 5 phút | Login |
+| GET | [`/api/v1/bookings`](#53-lấy-danh-sách-booking-của-user) | Lấy danh sách vé đã đặt của user | Login |
+| GET | [`/api/v1/bookings/:id`](#54-lấy-chi-tiết-booking) | Lấy chi tiết vé đã đặt theo id | Login |
+| POST | [`/api/v1/bookings`](#52-tạo-booking-khi-user-ấn-thanh-toán) | Đặt vé mới | Login |
+| POST | [`/api/v1/bookings/reserve`](#51-giữ-ghế-5-phút) | Giữ ghế 5 phút | Login |
 
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | `/api/v1/payments` | Tạo order thanh toán Zalopay từ booking | Login |
-| POST | `/api/v1/payments/callback` | Callback từ Zalopay (Zalopay tự động gọi) | No |
+| POST | [`/api/v1/payments`](#61-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
+| POST | [`/api/v1/payments/callback`](#62-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
 
 ### 1. Authentication APIs
 
@@ -451,6 +451,26 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
+#### 3.4. Cập nhật rạp (Admin only)
+
+**Endpoint:** `PUT /api/v1/cinemas/:id`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để cập nhật thông tin rạp (chỉ dành cho admin).
+
+---
+
+#### 3.5. Xóa rạp (Admin only)
+
+**Endpoint:** `DELETE /api/v1/cinemas/:id`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để xóa rạp (chỉ dành cho admin).
+
+---
+
 ### 4. Showtime APIs
 
 #### 4.1. Lấy danh sách suất chiếu
@@ -596,6 +616,26 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 **Lưu ý:** 
 - `price` là optional (mặc định: 45000)
 - Ghế sẽ tự động được tạo dựa trên `seatLayout` của rạp và được set isBooked = false cho tất cả ghế
+
+---
+
+#### 4.4. Cập nhật suất chiếu (Admin only)
+
+**Endpoint:** `PUT /api/v1/showtimes/:id`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để cập nhật thông tin suất chiếu (chỉ dành cho admin).
+
+---
+
+#### 4.5. Xóa suất chiếu (Admin only)
+
+**Endpoint:** `DELETE /api/v1/showtimes/:id`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để xóa suất chiếu (chỉ dành cho admin).
 
 ---
 
