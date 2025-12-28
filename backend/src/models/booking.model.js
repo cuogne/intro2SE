@@ -29,7 +29,7 @@ const bookingSchema = new mongoose.Schema({
 
 bookingSchema.index(
   { showtime: 1, 'seat.row': 1, 'seat.number': 1 },
-  { unique: true, partialFilterExpression: { status: { $in: ['pending', 'paid'] } } }
+  { unique: true, partialFilterExpression: { status: { $in: ['pending', 'confirmed'] } } }
 );
 
 const Booking = mongoose.model('Booking', bookingSchema);

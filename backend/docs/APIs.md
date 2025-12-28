@@ -159,8 +159,8 @@ headers: {
 |--------|----------|-------------|---------------|
 | GET | [`/api/v1/bookings`](#53-lấy-danh-sách-booking-của-user) | Lấy danh sách vé đã đặt của user | Login |
 | GET | [`/api/v1/bookings/:id`](#54-lấy-chi-tiết-booking) | Lấy chi tiết vé đã đặt theo id | Login |
-| POST | [`/api/v1/bookings`](#52-tạo-booking-khi-user-ấn-thanh-toán) | Đặt vé mới | Login |
-| POST | [`/api/v1/bookings/reserve`](#51-giữ-ghế-5-phút) | Giữ ghế 5 phút | Login |
+| POST | [`/api/v1/bookings`](#51-tạo-booking-khi-chọn-ghế-đầu-tiên) | Tạo booking khi chọn ghế đầu tiên (hoặc update nếu đã có) | Login |
+| PATCH | [`/api/v1/bookings/:id/seats`](#52-thêm-bớt-ghế) | Thêm/bớt ghế vào booking hiện có | Login |
 
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
@@ -641,26 +641,25 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ### 5. Booking APIs
 
-#### 5.1. Giữ ghế 5 phút
+#### 5.1. Tạo booking khi chọn ghế đầu tiên
 
-**Endpoint:** `POST /api/v1/bookings/reserve`
+**Endpoint:** `POST /api/v1/bookings`
 
 **Authentication:** Required
 
-**Mô tả:** API này dùng để giữ ghế trong 5 phút. Khi user chọn ghế trên UI, gọi API này để tạo booking với status `pending` và `holdExpiresAt`.
+**Mô tả:** API này dùng để tạo booking khi user chọn ghế đầu tiên. Booking sẽ có status `pending` và `holdExpiresAt` được set = `now + 5 phút`. 
 
 **Request Body:**
 ```json
 {
   "showtimeId": "507f1f77bcf86cd799439013",
   "seats": [
-    { "row": "A", "number": 1 },
-    { "row": "A", "number": 2 }
+    { "row": "A", "number": 1 }
   ]
 }
 ```
 
-**Response (201 Created):**
+**Response (201 Created) - Tạo booking mới:**
 ```json
 {
   "success": true,
@@ -668,54 +667,82 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
     "bookingId": "507f1f77bcf86cd799439014",
     "holdExpiresAt": "2025-12-25T10:35:00.000Z",
     "expiresInSeconds": 300,
+    "isNewBooking": true,
     "message": "Seats reserved for 5 minutes"
   }
 }
 ```
 
-**Lưu ý quan trọng:**
-- Ghế sẽ được giữ trong **5 phút** (300 giây)
-- Sau 5 phút, nếu không thanh toán, booking sẽ tự động bị xóa và ghế được giải phóng
-- Frontend nên hiển thị countdown timer dựa trên `holdExpiresAt`
-- Nếu user muốn thanh toán, sử dụng `bookingId` này để tạo payment order
-
----
-
-#### 5.2. Tạo booking (Khi user ấn thanh toán)
-
-**Endpoint:** `POST /api/v1/bookings`
-
-**Authentication:** Required
-
-**Mô tả:** API này tạo booking mới với status `pending` và `holdExpiresAt`. Thường được dùng khi user chọn ghế và ấn thanh toán ngay (không qua bước reserve).
-
-**Request Body:**
-```json
-{
-  "showtimeId": "507f1f77bcf86cd799439013",
-  "seats": [
-    { "row": "A", "number": 1 },
-    { "row": "A", "number": 2 }
-  ]
-}
-```
-
-**Response (201 Created):**
+**Response (201 Created) - Update booking hiện có:**
 ```json
 {
   "success": true,
   "data": {
-    "_id": "507f1f77bcf86cd799439014",
-    "showtime": "507f1f77bcf86cd799439013",
-    "user": "507f1f77bcf86cd799439015",
-    "seat": [
-      { "row": "A", "number": 1 },
-      { "row": "A", "number": 2 }
-    ],
-    "totalPrice": 90000,
-    "status": "pending",
+    "bookingId": "507f1f77bcf86cd799439014",
     "holdExpiresAt": "2025-12-25T10:35:00.000Z",
-    "bookedAt": "2025-12-25T10:30:00.000Z"
+    "expiresInSeconds": 180,
+    "isNewBooking": false,
+    "message": "Seats added to existing reservation"
+  }
+}
+```
+
+---
+
+#### 5.2. Thêm/bớt ghế
+
+**Endpoint:** `PATCH /api/v1/bookings/:id/seats`
+
+**Authentication:** Required
+
+**Mô tả:** API này dùng để thêm hoặc bớt ghế vào booking hiện có. Timer **KHÔNG reset** khi update (giữ nguyên `holdExpiresAt` ban đầu).
+
+**Request Body:**
+```json
+{
+  "action": "add",
+  "seats": [
+    { 
+      "row": "A", 
+      "number": 2 
+    }
+  ]
+}
+```
+
+**Response (200 OK) - Thêm ghế:**
+```json
+{
+  "success": true,
+  "data": {
+    "bookingId": "507f1f77bcf86cd799439014",
+    "holdExpiresAt": "2025-12-25T10:35:00.000Z",
+    "expiresInSeconds": 180,
+    "message": "Seat added to reservation"
+  }
+}
+```
+
+**Response (200 OK) - Bớt ghế:**
+```json
+{
+  "success": true,
+  "data": {
+    "bookingId": "507f1f77bcf86cd799439014",
+    "holdExpiresAt": "2025-12-25T10:35:00.000Z",
+    "expiresInSeconds": 120,
+    "message": "Seat removed from reservation"
+  }
+}
+```
+
+**Response (200 OK) - Xóa booking (khi bớt hết ghế):**
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true,
+    "message": "Reservation cancelled (no seats remaining)"
   }
 }
 ```
@@ -806,7 +833,9 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 **Authentication:** Required
 
-**Mô tả:** Tạo order thanh toán Zalopay từ booking. Booking phải có status `pending` và còn hiệu lực (chưa hết hạn 5 phút).
+**Mô tả:** Tạo order thanh toán Zalopay từ booking. Booking phải có status `pending` và còn hiệu lực (chưa hết hạn 5 phút). 
+
+**Lưu ý:** Khi user ấn thanh toán, chỉ cần gửi `bookingId`. Backend sẽ tự động lấy toàn bộ ghế từ booking để tạo order thanh toán.
 
 **Request Body:**
 ```json
@@ -873,15 +902,6 @@ Tài khoản Zalopay Sandbox để test chuyển khoản VISA: 4111 1111 1111 11
 AE có thể đọc thêm doc của Zalopay tại đây: https://developers.zalopay.vn/v2/general/overview.html
 
 ---
-
-### Flow của API
-1. User đăng kí tài khoản và login (POST /api/auth/register và POST /api/auth/login)
-2. User chọn phim, rạp, suất chiếu và ghế (GET /api/v1/movies, GET /api/v1/cinemas, GET /api/v1/showtimes)
-3. User ấn thanh toán (POST /api/v1/bookings)
-4. Backend tạo booking với status `pending` và `holdExpiresAt` (POST /api/v1/bookings)
-5. Backend tạo order thanh toán Zalopay (POST /api/v1/payments) và frontend sẽ chuyển hướng người dùng đến trang thanh toán của ZaloPay.
-6. User thanh toán và Zalopay sẽ tự động gọi callback tới API này (POST /api/v1/payments/callback)
-7. Backend cập nhật booking status thành `confirmed` (POST /api/v1/payments/callback)
 
 ### HTTP Status Codes
 
