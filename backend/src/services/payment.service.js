@@ -82,7 +82,7 @@ const createZalopayOrder = async (bookingId) => {
         embed_data: JSON.stringify(embed_data),
         amount: amount,
         description: description,
-        bank_code: 'zaloapp', // để trống thì sẽ thanh toán thêm mấy cái khác
+        bank_code: 'zalopayapp', // để trống thì sẽ thanh toán thêm mấy cái khác
         //khi thanh toán xong, zalopay server sẽ POST đến url này để thông báo cho server của mình
         //Chú ý: cần dùng ngrok để public url thì Zalopay Server mới call đến được
         callback_url: zalopayConfig.callbackUrl
@@ -100,21 +100,12 @@ const createZalopayOrder = async (bookingId) => {
             booking.paymentProvider = 'zalopay';
             booking.paymentMeta = {
                 orderToken: result.data.order_token,
-                zpTransToken: result.data.zp_trans_token,
-                orderUrl: result.data.order_url, // Lưu order_url để frontend redirect
-                qrCode: result.data.qr_code // Lưu QR code nếu cần
+                zpTransToken: result.data.zp_trans_token
             };
             await booking.save();
         }
 
-        // Trả về response với đầy đủ thông tin
-        return {
-            ...result.data,
-            // Đảm bảo có order_url để frontend redirect
-            order_url: result.data.order_url || result.data.orderUrl,
-            // QR code nếu cần hiển thị
-            qr_code: result.data.qr_code
-        };
+        return result.data;
     }
     catch (error) {
         throw new Error('Error creating Zalopay order: ' + error.message);
@@ -124,7 +115,6 @@ const createZalopayOrder = async (bookingId) => {
 const handleCallback = async (dataStr, reqMac) => {
     try {
         let mac = CryptoJS.HmacSHA256(dataStr, zalopayConfig.key2).toString();
-        console.log('Computed MAC:', mac);
 
         if (reqMac !== mac) {
             console.error('Invalid MAC in callback');
@@ -135,8 +125,6 @@ const handleCallback = async (dataStr, reqMac) => {
         }
 
         const callbackData = JSON.parse(dataStr);
-        console.log('Parsed callback data:', JSON.stringify(callbackData, null, 2));
-
         const booking = await Booking.findOne({
             paymentTransId: callbackData.app_trans_id
         }).populate('showtime user');
@@ -178,6 +166,7 @@ const handleCallback = async (dataStr, reqMac) => {
         };
 
         await booking.save();
+        console.log("thanh toan thanh cong")
 
         return { return_code: 1, return_message: 'success' };
 
@@ -188,27 +177,7 @@ const handleCallback = async (dataStr, reqMac) => {
     }
 };
 
-// Kiểm tra trạng thái thanh toán
-const getPaymentStatus = async (bookingId) => {
-    const booking = await Booking.findById(bookingId)
-        .select('status paymentTransId paidAt totalPrice paymentProvider');
-
-    if (!booking) {
-        throw new Error('Booking not found');
-    }
-
-    return {
-        bookingId: booking._id,
-        status: booking.status,
-        paymentTransId: booking.paymentTransId,
-        paidAt: booking.paidAt,
-        totalPrice: booking.totalPrice,
-        paymentProvider: booking.paymentProvider
-    };
-};
-
 module.exports = {
     createZalopayOrder,
-    handleCallback,
-    getPaymentStatus
+    handleCallback
 };
