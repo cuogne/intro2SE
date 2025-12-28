@@ -1,75 +1,110 @@
-import api from './api';
+import api from "./api";
+
+export type MovieStatus = "now_showing" | "coming_soon" | "ended";
 
 export interface Movie {
-  _id: string;
-  title: string;
-  minutes: number;
-  genre: string[];
-  releaseDate: string;
-  posterImg: string;
-  trailerLink: string;
-  description: string;
-  status: string;
+    _id: string;
+    title: string;
+    minutes: number;
+    genre: string[];
+    releaseDate: string;
+    posterImg: string;
+    trailerLink: string;
+    description: string;
+    status: string;
+}
+
+export interface Pagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface MovieListResponse {
+    movies: Movie[];
+    pagination: Pagination;
 }
 
 // DỮ LIỆU GIẢ (Backup)
 const MOCK_MOVIES: Movie[] = Array.from({ length: 20 }).map((_, index) => ({
-  _id: `mock-${index}`,
-  title: `Phim Mẫu ${index + 1}`,
-  minutes: 120,
-  genre: ['Hành động', 'Viễn tưởng'],
-  releaseDate: new Date().toISOString(),
-  posterImg: 'https://placehold.co/300x450/png?text=Mock+Data',
-  trailerLink: '',
-  description: 'Dữ liệu giả lập.',
-  status: index % 2 === 0 ? 'Now Showing' : 'Coming Soon',
+    _id: `mock-${index}`,
+    title: `Phim Mẫu ${index + 1}`,
+    minutes: 120,
+    genre: ["Hành động", "Viễn tưởng"],
+    releaseDate: new Date().toISOString(),
+    posterImg: "https://placehold.co/300x450/png?text=Mock+Data",
+    trailerLink: "",
+    description: "Dữ liệu giả lập.",
+    status: index % 2 === 0 ? "now_showing" : "coming_soon",
 }));
 
-export const fetchMovies = async (
-  status: 'Now Showing' | 'Coming Soon',
-  page: number = 1 
-): Promise<Movie[]> => {
-  try {
-    const basePath = status === 'Now Showing' ? '/v1/movies/now_showing' : '/v1/movies/coming_soon';
-    
-    const endpoint = `${basePath}?page=${page}`;
-    
-    // console.log(`📡 Đang gọi API: ${endpoint}`);
-    
-    const response = await api.get(endpoint);
-    const resData = response.data;
+export const fetchMovies = async (status?: "Now Showing" | "Coming Soon" | "Ended", page: number = 1, limit: number = 10): Promise<MovieListResponse> => {
+    try {
+        const params: Record<string, any> = { page, limit };
+        let normalizedStatus: MovieStatus | undefined;
+        if (status) {
+            normalizedStatus = status === "Now Showing" ? "now_showing" : status === "Coming Soon" ? "coming_soon" : "ended";
+            params.status = normalizedStatus;
+        }
 
-    // console.log("🔍 Cấu trúc trả về gốc:", resData);
+        const response = await api.get("/v1/movies", { params });
+        const resData = response.data;
 
-    // TRƯỜNG HỢP 1: Backend trả về mảng trực tiếp [Movie, Movie]
-    if (Array.isArray(resData)) {
-        return resData.length ? resData : MOCK_MOVIES.filter(m => m.status === status);
+        // Expected shape: { success: true, data: { movies: Movie[], pagination: { page, limit, total, totalPages } } }
+        const movies: Movie[] = resData?.data?.movies ?? resData?.movies ?? [];
+        const pagination =
+            resData?.data?.pagination ??
+            resData?.pagination ??
+            ({
+                page,
+                limit,
+                total: movies.length,
+                totalPages: Math.max(1, Math.ceil((movies.length || 0) / limit)),
+            } as Pagination);
+
+        const finalMovies = movies.length ? movies : MOCK_MOVIES.filter((m) => !normalizedStatus || m.status === normalizedStatus);
+
+        return { movies: finalMovies, pagination };
+    } catch (error) {
+        console.error("❌ Lỗi gọi API:", error);
+        let normalizedStatus: MovieStatus | undefined = status === "Now Showing" ? "now_showing" : "coming_soon";
+        const fallback = MOCK_MOVIES.filter((m) => !normalizedStatus || m.status === normalizedStatus);
+        return {
+            movies: fallback,
+            pagination: { page, limit, total: fallback.length, totalPages: Math.max(1, Math.ceil(fallback.length / limit)) },
+        };
     }
+};
 
-    // TRƯỜNG HỢP 2: Backend trả về object { data: [Movie, Movie] } (Chuẩn RESTful phổ biến)
-    if (resData.data && Array.isArray(resData.data)) {
-        return resData.data.length ? resData.data : MOCK_MOVIES.filter(m => m.status === status);
+export const createMovie = async (movieData: Partial<Movie>): Promise<Movie | null> => {
+    try {
+        const response = await api.post("/v1/movies", movieData);
+        return response.data?.data ?? response.data ?? null;
+    } catch (error) {
+        console.error("❌ Lỗi tạo phim:", error);
+        return null;
     }
+};
 
-    // TRƯỜNG HỢP 3: Backend trả về object phân trang phức tạp
-    if (resData.data && typeof resData.data === 'object') {
-        const innerData = resData.data;
-        
-        // Tìm mảng phim trong các key phổ biến
-        if (Array.isArray(innerData.docs)) return innerData.docs;       // mongoose-paginate
-        if (Array.isArray(innerData.movies)) return innerData.movies;   // tự định nghĩa
-        if (Array.isArray(innerData.results)) return innerData.results; // cấu trúc khác
-        if (Array.isArray(innerData.items)) return innerData.items;     // cấu trúc khác
+export const updateMovie = async (id: string, movieData: Partial<Movie>): Promise<Movie | null> => {
+    try {
+        const response = await api.put(`/v1/movies/${id}`, movieData);
+        return response.data?.data ?? response.data ?? null;
+    } catch (error) {
+        console.error("❌ Lỗi cập nhật phim:", error);
+        return null;
     }
+};
 
-    //console.warn("⚠️ Không tìm thấy mảng phim trong phản hồi API. Dùng Mock Data.");
-    return MOCK_MOVIES.filter(m => m.status === status);
-
-  } catch (error) {
-    console.error("❌ Lỗi gọi API:", error);
-    // Khi lỗi vẫn trả về Mock Data để UI không bị trắng trang
-    return MOCK_MOVIES.filter(m => m.status === status);
-  }
+export const deleteMovie = async (id: string): Promise<boolean> => {
+    try {
+        const response = await api.delete(`/v1/movies/${id}`);
+        return response.data?.success ?? false;
+    } catch (error) {
+        console.error("❌ Lỗi xóa phim:", error);
+        return false;
+    }
 };
 
 export const fetchMovieDetail = async (id: string): Promise<Movie | null> => {
@@ -82,4 +117,4 @@ export const fetchMovieDetail = async (id: string): Promise<Movie | null> => {
     } catch (error) {
         return null;
     }
-}
+};

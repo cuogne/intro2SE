@@ -1,23 +1,12 @@
 import { useEffect, useState } from "react";
-// Inlined type: Movie and MovieStatus
-type MovieStatus = "now_showing" | "coming_soon" | "ended";
-
-interface Movie {
-    id: string;
-    title: string;
-    duration: number;
-    genres: string[];
-    releaseDate: string;
-    status: MovieStatus;
-    poster: string;
-    trailer?: string;
-}
+import type { Movie, MovieStatus } from "../services/movieService";
 
 type Props = {
     open: boolean;
     initialMovie?: Movie | null;
     onClose: () => void;
-    onSave: (movie: Partial<Movie> & { id?: string }) => void;
+    onSave: (movie: Partial<Movie> & { _id?: string }) => void;
+    saving?: boolean;
 };
 
 function toISO(dateDisplay?: string) {
@@ -28,23 +17,15 @@ function toISO(dateDisplay?: string) {
     const [d, m, y] = parts;
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
 }
-function toDisplay(iso?: string) {
-    if (!iso) return "";
-    // accept yyyy-mm-dd
-    if (iso.includes("-")) {
-        const [y, m, d] = iso.split("-");
-        return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
-    }
-    return iso;
-}
 
-export default function MovieFormModal({ open, initialMovie = null, onClose, onSave }: Props) {
+export default function MovieFormModal({ open, initialMovie = null, onClose, onSave, saving = false }: Props) {
     const [title, setTitle] = useState("");
-    const [duration, setDuration] = useState<number | "">("");
+    const [minutes, setMinutes] = useState<number | "">("");
     const [releaseDate, setReleaseDate] = useState(""); // iso yyyy-mm-dd for input
     const [status, setStatus] = useState<MovieStatus>("now_showing");
     const [genresText, setGenresText] = useState(""); // comma separated
     const [trailer, setTrailer] = useState("");
+    const [description, setDescription] = useState("");
 
     // poster file handling
     const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -53,22 +34,26 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
     useEffect(() => {
         if (initialMovie) {
             setTitle(initialMovie.title || "");
-            setDuration(initialMovie.duration || "");
-            setReleaseDate(toISO(initialMovie.releaseDate));
-            setStatus(initialMovie.status || "now_showing");
-            setGenresText((initialMovie.genres || []).join(", "));
-            setTrailer(initialMovie.trailer || "");
+            setMinutes(initialMovie.minutes ?? "");
+            const rd = initialMovie.releaseDate || "";
+            if (rd.includes("-")) setReleaseDate(rd.slice(0, 10));
+            else setReleaseDate(rd.includes("/") ? toISO(rd) : rd);
+            setStatus((initialMovie.status || "now_showing") as MovieStatus);
+            setGenresText((initialMovie.genre || []).join(", "));
+            setTrailer(initialMovie.trailerLink || "");
             setPosterFile(null);
-            setPosterPreview(initialMovie.poster || "");
+            setPosterPreview(initialMovie.posterImg || "");
+            setDescription(initialMovie.description || "");
         } else {
             setTitle("");
-            setDuration("");
+            setMinutes("");
             setReleaseDate("");
             setStatus("now_showing");
             setGenresText("");
             setTrailer("");
             setPosterFile(null);
             setPosterPreview("");
+            setDescription("");
         }
     }, [initialMovie, open]);
 
@@ -76,10 +61,11 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
 
     const submit = (e?: React.FormEvent) => {
         e?.preventDefault();
+        if (saving) return; // prevent double submit
         // basic validation
         if (!title.trim()) return alert("Tiêu đề không được để trống");
-        const dur = typeof duration === "number" ? duration : Number(duration || 0);
-        if (!dur || dur <= 0) return alert("Thời lượng phải lớn hơn 0");
+        const min = typeof minutes === "number" ? minutes : Number(minutes || 0);
+        if (!min || min <= 0) return alert("Thời lượng phải lớn hơn 0");
         const genres = genresText
             .split(",")
             .map((g) => g.trim())
@@ -87,14 +73,16 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
 
         const proceedSave = (posterData?: string) => {
             const movie: Partial<Movie> = {
-                id: initialMovie?.id,
+                _id: initialMovie?._id,
                 title: title.trim(),
-                duration: dur,
-                releaseDate: toDisplay(releaseDate),
+                minutes: min,
+                releaseDate: releaseDate || undefined,
                 status,
-                genres,
-                poster: posterData || posterPreview || "",
-                trailer: trailer?.trim() || undefined,
+                genre: genres,
+                description: description?.trim() || undefined,
+                //posterImg: posterData || posterPreview || "",
+                posterImg: "",
+                trailerLink: trailer?.trim() || undefined,
             };
             onSave(movie);
         };
@@ -129,6 +117,7 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                                 </label>
                                 <input
                                     value={title}
+                                    disabled={saving}
                                     onChange={(e) => setTitle(e.target.value)}
                                     className="w-full form-input rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary px-4 py-2.5 focus:border-primary focus:ring-primary"
                                 />
@@ -138,8 +127,9 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                                     Thời lượng (phút) <span className="text-red-500">*</span>
                                 </label>
                                 <input
-                                    value={duration}
-                                    onChange={(e) => setDuration(e.target.value === "" ? "" : Number(e.target.value))}
+                                    value={minutes}
+                                    disabled={saving}
+                                    onChange={(e) => setMinutes(e.target.value === "" ? "" : Number(e.target.value))}
                                     type="number"
                                     className="w-full form-input rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary px-4 py-2.5 focus:border-primary focus:ring-primary"
                                 />
@@ -151,6 +141,7 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ngày phát hành</label>
                                 <input
                                     value={releaseDate}
+                                    disabled={saving}
                                     onChange={(e) => setReleaseDate(e.target.value)}
                                     type="date"
                                     className="w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white pl-4 pr-10 py-2.5 focus:outline-none focus:border-primary focus:ring-primary"
@@ -160,6 +151,7 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Trạng thái</label>
                                 <select
                                     value={status}
+                                    disabled={saving}
                                     onChange={(e) => setStatus(e.target.value as MovieStatus)}
                                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white pl-4 pr-10 py-2.5 focus:outline-none focus:border-primary focus:ring-primary cursor-pointer text-sm"
                                 >
@@ -195,6 +187,8 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                             <textarea
                                 className="w-full form-input rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark px-4 py-3 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary"
                                 rows={4}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
                             />
                         </div>
                     </div>
@@ -218,6 +212,7 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                                 <input
                                     id="poster-file-input"
                                     type="file"
+                                    disabled={saving}
                                     accept="image/*"
                                     className="hidden"
                                     onChange={(e) => {
@@ -260,16 +255,25 @@ export default function MovieFormModal({ open, initialMovie = null, onClose, onS
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-500 transition-colors"
+                                disabled={saving}
+                                className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-500 transition-colors disabled:opacity-60 disabled:pointer-events-none"
                             >
                                 Hủy bỏ
                             </button>
                             <button
                                 type="submit"
                                 onClick={submit}
-                                className="px-5 py-2.5 rounded-lg text-sm font-medium bg-primary text-white hover:bg-blue-800 shadow-lg shadow-primary/25 transition-colors"
+                                disabled={saving}
+                                className="px-5 py-2.5 rounded-lg text-sm font-medium bg-primary text-white hover:bg-blue-800 shadow-lg shadow-primary/25 transition-colors disabled:opacity-60 disabled:pointer-events-none"
                             >
-                                Lưu Phim
+                                {saving ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined animate-spin">autorenew</span>
+                                        Đang lưu...
+                                    </span>
+                                ) : (
+                                    "Lưu Phim"
+                                )}
                             </button>
                         </div>
                     </div>
