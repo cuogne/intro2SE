@@ -1,7 +1,7 @@
-# @baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
+@baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
 @baseUrl = http://localhost:3000/api
 
-### Login
+### Đăng nhập
 # @name loginRequest
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -11,27 +11,96 @@ Content-Type: application/json
   "password": "123456"
 }
 
-### luu token vao bien
+### Lưu token vào biến
 @authToken = {{loginRequest.response.body.$.data.token}}
 
-### Chon suat chieu
-# @name selectShowtime
+### Lấy danh sách phim đang chiếu
+# @name getMovies
+GET {{baseUrl}}/v1/movies?status=now_showing&page=1&limit=10
+
+### chon phim dau tien
+@movieId = {{getMovies.response.body.$.data.movies[0]._id}}
+
+### Lấy danh sách suất chiếu của phim
+# @name getShowtimes
+GET {{baseUrl}}/v1/showtimes?movieId={{movieId}}
+
+### Lưu showtimeId suat chieu dau tien
+@showtimeId = {{getShowtimes.response.body.$.data.docs[0]._id}}
+
+### Lấy chi tiết suất chiếu
+# @name getShowtimeDetail
+GET {{baseUrl}}/v1/showtimes/{{showtimeId}}
+
+### Đặt ghế A1 với suất chiếu tren
+# @name createBooking
 POST {{baseUrl}}/v1/bookings
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "showtimeId": "69458be61231ce4578f2980b",
+  "showtimeId": "{{showtimeId}}",
   "seats": [
-    { "row": "A", "number": 1 },
-    { "row": "A", "number": 2 }
+    { 
+      "row": "A", 
+      "number": 1 
+    }
   ]
 }
 
-### Luu bookingId tu response
-@bookingId = {{selectShowtime.response.body.$.data._id}}
+### Lưu bookingId từ response
+@bookingId = {{createBooking.response.body.$.data.bookingId}}
 
-### Thanh toan cho booking
+### Thêm 1 ghế
+# @name addSeat
+PATCH {{baseUrl}}/v1/bookings/{{bookingId}}/seats
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "action": "add",
+  "seats": [
+    { 
+      "row": "A", 
+      "number": 2 
+    }
+  ]
+}
+
+
+### Click bỏ ghế đã chọn
+# @name removeSeat
+PATCH {{baseUrl}}/v1/bookings/{{bookingId}}/seats
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "action": "remove",
+  "seats": [
+    { 
+      "row": "A", 
+      "number": 2 
+    }
+  ]
+}
+
+### Thêm lại cái nữa
+# @name addSeatAgain
+PATCH {{baseUrl}}/v1/bookings/{{bookingId}}/seats
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "action": "add",
+  "seats": [
+    { 
+      "row": "A", 
+      "number": 2 
+    }
+  ]
+}
+
+### Tạo order thanh toán Zalopay dựa theo booking trên
 # @name makePayment
 POST {{baseUrl}}/v1/payments
 Authorization: Bearer {{authToken}}
@@ -40,3 +109,7 @@ Content-Type: application/json
 {
   "bookingId": "{{bookingId}}"
 }
+
+### Kiểm tra booking sau thanh toán (status = 'confirmed')
+GET {{baseUrl}}/v1/bookings/{{bookingId}}
+Authorization: Bearer {{authToken}}
