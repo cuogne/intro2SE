@@ -1,6 +1,18 @@
 import { useState } from "react";
 import "../index.css";
-import type { Movie } from "../types/movie";
+// Inlined type: Movie and MovieStatus
+type MovieStatus = "now_showing" | "coming_soon" | "ended";
+
+interface Movie {
+    id: string;
+    title: string;
+    duration: number; // minutes
+    genres: string[];
+    releaseDate: string; // display string (dd/mm/yyyy)
+    status: MovieStatus;
+    poster: string;
+    trailer?: string;
+}
 import MovieFormModal from "../components/MovieFormModal";
 
 const SAMPLE_MOVIES: Movie[] = [
@@ -221,7 +233,7 @@ export default function MovieManagementPage() {
                                 type="text"
                             />
                         </div>
-                        <div className="flex gap-3 overflow-x-auto pb-1 md:pb-0">     
+                        <div className="flex gap-3 overflow-x-auto pb-1 md:pb-0">
                             <div className="relative min-w-[140px]">
                                 <select className="w-full appearance-none rounded-lg border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white pl-4 pr-10 py-2.5 focus:outline-none focus:border-primary cursor-pointer text-sm">
                                     <option value="">Tất cả trạng thái</option>

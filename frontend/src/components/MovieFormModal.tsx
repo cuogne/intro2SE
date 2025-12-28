@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import type { Movie, MovieStatus } from "../types/movie";
+// Inlined type: Movie and MovieStatus
+type MovieStatus = "now_showing" | "coming_soon" | "ended";
+
+interface Movie {
+    id: string;
+    title: string;
+    duration: number;
+    genres: string[];
+    releaseDate: string;
+    status: MovieStatus;
+    poster: string;
+    trailer?: string;
+}
 
 type Props = {
     open: boolean;

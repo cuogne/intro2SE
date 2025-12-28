@@ -1,5 +1,12 @@
 import { useState } from "react";
-import type { TicketType } from "../types/ticketType";
+// Inlined type: TicketType
+interface TicketType {
+    id: string;
+    name: string;
+    price: number;
+    description?: string;
+    active: boolean;
+}
 import TicketTypeFormModal from "../components/TicketTypeFormModal";
 
 const INITIAL_TYPES: TicketType[] = [
@@ -136,9 +143,7 @@ export default function TicketTypeManagementPage() {
                 </div>
 
                 <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318]">
-                    <div className="text-sm text-slate-500 dark:text-text-secondary">
-                        Hiển thị {types.length} loại vé
-                    </div>
+                    <div className="text-sm text-slate-500 dark:text-text-secondary">Hiển thị {types.length} loại vé</div>
                 </div>
             </div>
             <TicketTypeFormModal open={isOpen} initial={current || undefined} onClose={() => setIsOpen(false)} onSave={handleSave} />

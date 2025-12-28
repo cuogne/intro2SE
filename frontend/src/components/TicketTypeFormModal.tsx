@@ -1,4 +1,11 @@
-import type { TicketType } from "../types/ticketType";
+// Inlined type: TicketType
+interface TicketType {
+    id: string;
+    name: string;
+    price: number;
+    description?: string;
+    active: boolean;
+}
 import { useEffect, useState } from "react";
 
 type Props = {
