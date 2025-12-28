@@ -213,7 +213,7 @@ export default function MovieManagementPage() {
                             <p className="text-slate-500 dark:text-text-secondary mt-1">Quản lý tất cả phim đang chiếu, sắp chiếu và đã kết thúc.</p>
                         </div>
                         <button
-                            className="bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium shadow-lg shadow-primary/30 flex items-center gap-2 transition-all active:scale-95 group"
+                            className="bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium shadow-lg text-sm shadow-primary/30 flex items-center gap-2 transition-all active:scale-95 group"
                             onClick={() => {
                                 setCurrentMovie(null);
                                 setAddOpen(true);

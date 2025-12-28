@@ -90,8 +90,13 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <div className="fixed inset-0 bg-black/40" onClick={onClose} />
             <div className="relative w-full max-w-xl bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{initial ? "Sửa suất chiếu" : "Thêm suất chiếu"}</h3>
-                
+                <div className="p-2 flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{initial ? "Sửa suất chiếu" : "Thêm suất chiếu"}</h3>
+                    <button className="text-slate-400 hover:text-red-500 rounded-lg p-1 hover:bg-red-500/10 transition-colors" onClick={onClose}>
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <label className="flex flex-col">
                         <span className="text-sm text-slate-700 dark:text-slate-300 mb-2">Phim</span>
@@ -157,7 +162,10 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
                 {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
 
                 <div className="mt-6 flex items-center justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-white dark:bg-surface-dark text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white active:scale-95">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-lg bg-white dark:bg-surface-dark text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white active:scale-95"
+                    >
                         Hủy
                     </button>
                     <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-primary text-white shadow-md active:scale-95">

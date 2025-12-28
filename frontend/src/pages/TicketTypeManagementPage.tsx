@@ -70,9 +70,9 @@ export default function TicketTypeManagementPage() {
                 </div>
                 <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg shadow-primary/25 transition-all active:scale-95"
+                    className="flex items-center gap-2 bg-primary group hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg shadow-primary/25 transition-all active:scale-95"
                 >
-                    <span className="material-symbols-outlined text-[20px]">add</span>
+                    <span className="material-symbols-outlined group-hover:rotate-90 transition-transform">add</span>
                     <span>Thêm loại vé</span>
                 </button>
             </div>
