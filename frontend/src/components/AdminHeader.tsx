@@ -1,19 +1,12 @@
-import React from "react";
 import { NavLink } from "react-router-dom";
 
 type AdminHeaderProps = {
-    query?: string;
-    setQuery?: (value: string) => void;
-    isDark?: boolean;
-    setIsDark?: React.Dispatch<React.SetStateAction<boolean>>;
     onLogout?: () => void;
 };
 
-const noopQuery = (_: string) => {};
-const noopSetIsDark = (() => {}) as React.Dispatch<React.SetStateAction<boolean>>;
 const noopVoid = () => {};
 
-export default function AdminHeader({ query = "", setQuery = noopQuery, isDark = false, setIsDark = noopSetIsDark, onLogout = noopVoid}: AdminHeaderProps) {
+export default function AdminHeader({ onLogout = noopVoid}: AdminHeaderProps) {
     return (
         <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-border-dark bg-white dark:bg-[#111318] px-4 lg:px-10 py-3 shrink-0 z-20">
             <div className="flex items-center gap-4 lg:gap-8">
@@ -27,20 +20,6 @@ export default function AdminHeader({ query = "", setQuery = noopQuery, isDark =
                         </svg>
                     </div>
                     <h2 className="text-lg font-bold leading-tight tracking-tight hidden md:block">Cinema Admin</h2>
-                </div>
-                <div className="hidden md:flex flex-col min-w-40 h-10 w-64">
-                    <div className="flex w-full flex-1 items-stretch rounded-lg h-full bg-slate-100 dark:bg-border-dark overflow-hidden">
-                        <div className="text-slate-400 dark:text-text-secondary flex items-center justify-center pl-4 pr-2">
-                            <span className="material-symbols-outlined text-[20px]">search</span>
-                        </div>
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            className="w-full min-w-0 flex-1 resize-none bg-transparent border-none focus:ring-0 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary px-0 h-full leading-normal"
-                            placeholder="Search..."
-                            aria-label="Search"
-                        />
-                    </div>
                 </div>
             </div>
 
@@ -103,13 +82,6 @@ export default function AdminHeader({ query = "", setQuery = noopQuery, isDark =
                 </nav>
 
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setIsDark((v) => !v)}
-                        title="Toggle theme"
-                        className="flex items-center justify-center rounded-lg h-9 px-3 bg-slate-100 dark:bg-border-dark transition-colors text-sm font-medium"
-                    >
-                        <span className="material-symbols-outlined">{isDark ? "dark_mode" : "light_mode"}</span>
-                    </button>
                     <button
                         className="flex items-center justify-center rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 transition-colors text-white text-sm font-bold shadow-lg shadow-primary/20"
                         onClick={onLogout}
