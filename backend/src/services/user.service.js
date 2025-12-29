@@ -1,79 +1,81 @@
 const User = require('../models/user.model')
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
 
-// dki tai khoan
-const register = async ({ username, email, password}) => {
-    const checkUsername = await User.findOne({ username })
-    const checkEmail = await User.findOne({ email })
-
-    if (checkUsername) {
-        throw new Error('Username already exists')
-    }
-
-    if (checkEmail) {
-        throw new Error('Email already exists')
-    }
-
-    // hashing password
-    const salt = bcrypt.genSaltSync(10)
-    const hashedPassword = bcrypt.hashSync(password, salt)
-
-    // create new account
-    const newUser = new User({
-        username,
-        email,
-        password: hashedPassword,
-        role: 'user',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    })
-
-    await newUser.save() // save in db
-
-    return {
-        user: {
-            id: newUser._id,
-            username: newUser.username,
-            email: newUser.email,
-            role: newUser.role
-        }
-    }
+const getAllAccounts = async () => {
+    const users = await User.find().select('-password')
+    return users
 }
 
-const login = async ({ username, password}) => {
-    const checkUser = await User.findOne({username})
+const getAccountById = async (id) => {
+    const user = await User.findById(id).select('-password')
+    return user
+}
 
-    if (!checkUser){
-        throw new Error('Username not found')
+const deleteAccount = async (id) => {
+    await User.findByIdAndDelete(id)
+}
+
+const updateAccount = async (userId, updateData, currentUserId) => {
+    const allowedFields = ['username', 'email'];
+    const filteredData = {};
+
+    for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+            filteredData[field] = updateData[field].trim();
+        }
     }
 
-    const checkPassword = bcrypt.compareSync(password, checkUser.password)
-    if (!checkPassword){
-        throw new Error('Incorrect password')
+    if (Object.keys(filteredData).length === 0) {
+        throw new Error('No valid fields to update');
     }
 
-    // create jwt token
-    const token = jwt.sign({
-        id: checkUser._id,
-        username: checkUser.username,
-        role: checkUser.role
-    },
-    process.env.JWT_SECRET, 
-    { expiresIn: '1h' })
-
-    return { 
-        user: {
-            id: checkUser._id,
-            username: checkUser.username,
-            email: checkUser.email,
-            role: checkUser.role
-        },
-        token 
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new Error('User not found');
     }
+
+    if (userId.toString() !== currentUserId.toString()) {
+        throw new Error('Unauthorized: You can only update your own account');
+    }
+
+    if (filteredData.username && filteredData.username !== user.username) {
+        const existingUsername = await User.findOne({
+            username: filteredData.username,
+            _id: { $ne: userId }
+        });
+
+        if (existingUsername) {
+            throw new Error('Username already exists');
+        }
+    }
+    if (filteredData.email && filteredData.email !== user.email) {
+        const existingEmail = await User.findOne({
+            email: filteredData.email,
+            _id: { $ne: userId }
+        });
+
+        if (existingEmail) {
+            throw new Error('Email already exists');
+        }
+    }
+
+    filteredData.updatedAt = new Date();
+
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: filteredData },
+        { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+        throw new Error('Failed to update user');
+    }
+
+    return updatedUser;
 }
 
 module.exports = {
-    register,
-    login
+    getAllAccounts,
+    getAccountById,
+    deleteAccount,
+    updateAccount
 }
