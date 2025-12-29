@@ -8,54 +8,66 @@ interface RowLayout {
     seats: string[];
 }
 
-export interface RoomPayload {
-    id?: string;
-    name: string;
-    address?: string;
-    status?: "active" | "maintenance" | "closed";
-    type?: string;
-    seatLayout: RowLayout[]; // matches mongoose model: row + seats[]
-}
+import type { Cinema } from "../services/cinemaService";
+
+// RoomEditor uses the `Cinema` model for initial and save payloads
 
 type Props = {
     open: boolean;
-    initial?: RoomPayload | null;
+    initial?: Partial<Cinema> | null;
     onClose: () => void;
-    onSave: (payload: RoomPayload) => void;
+    onSave: (payload: Partial<Cinema>) => void;
 };
 
-const DEFAULT_ROWS = 11;
+const DEFAULT_ROWS = 7;
 
-function padCol(n: number, width = 2) {
-    return String(n).padStart(width, "0");
+function padCol(n: number) {
+    return String(n);
 }
 
 export default function RoomEditor({ open, initial = null, onClose, onSave }: Props) {
     const [name, setName] = useState(initial?.name ?? "");
     const [address, setAddress] = useState(initial?.address ?? "");
-    const [cols, setCols] = useState<number>(initial?.seatLayout?.[0]?.seats.length ?? 12);
+    const [cols, setCols] = useState<number>(initial?.seatsCols ?? initial?.seatLayout?.[0]?.seats.length ?? 10);
     const [seatStates, setSeatStates] = useState<Record<string, SeatState>>({});
-    const [rowsCount, setRowsCount] = useState<number>(initial?.seatLayout?.length ?? DEFAULT_ROWS);
-    const [status, setStatus] = useState<"active" | "maintenance" | "closed">(initial?.status ?? "active");
-    const [type, setType] = useState<string>(initial?.type ?? "Custom");
+    const [rowsCount, setRowsCount] = useState<number>(initial?.seatRows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS);
+    const [status, setStatus] = useState<string>(initial?.status ?? "open");
+    const [type, setType] = useState<string>(initial?.type ?? "custom");
 
-    // keep fields in sync when opening with an `initial` payload
     useEffect(() => {
         setName(initial?.name ?? "");
         setAddress(initial?.address ?? "");
-        setCols(initial?.seatLayout?.[0]?.seats.length ?? 12);
-        setRowsCount(initial?.seatLayout?.length ?? DEFAULT_ROWS);
-        setStatus(initial?.status ?? "active");
-        setType(initial?.type ?? "Custom");
-        // reset seat state when loading a new initial payload
-        setSeatStates({});
+
+        const initialRows = initial?.seatRows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS;
+        const initialCols = initial?.seatsCols ?? initial?.seatLayout?.[0]?.seats.length ?? 12;
+
+        setCols(initialCols);
+        setRowsCount(initialRows);
+        setStatus(initial?.status ?? "open");
+        setType(initial?.type ?? "2dstandard");
+
+        // Build seat availability map: if initial has seatLayout, mark only those seats as available
+        const states: Record<string, SeatState> = {};
+        for (let r = 0; r < initialRows; r++) {
+            const rowLetter = String.fromCharCode("A".charCodeAt(0) + r);
+            for (let c = 0; c < initialCols; c++) {
+                const id = `${rowLetter}${c + 1}`;
+                let available = true;
+                if (initial?.seatLayout) {
+                    const rowObj = initial.seatLayout.find((x) => x.row === rowLetter);
+                    available = !!(rowObj && rowObj.seats.includes(id));
+                }
+                states[id] = available;
+            }
+        }
+
+        setSeatStates(states);
     }, [initial, open]);
 
     const clampedCols = Math.min(20, Math.max(0, cols));
     const clampedRows = Math.min(20, Math.max(0, rowsCount));
 
     const ROWS = Array.from({ length: clampedRows }).map((_, i) => String.fromCharCode("A".charCodeAt(0) + i));
-
 
     function toggleState(seatId: string) {
         setSeatStates((prev) => {
@@ -66,12 +78,30 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
     }
 
     function handleSave() {
-        const rows: RowLayout[] = ROWS.map((r) => ({
-            row: r,
-            seats: Array.from({ length: clampedCols }).map((_, i) => `${r}${padCol(i + 1)}`),
-        }));
+        const rows: RowLayout[] = ROWS.map((r) => {
+            const seats = Array.from({ length: clampedCols })
+                .map((_, i) => {
+                    const id = `${r}${padCol(i + 1)}`;
+                    const available = seatStates[id];
+                    return available === false ? null : id;
+                })
+                .filter(Boolean) as string[];
+            return { row: r, seats };
+        }).filter((row) => row.seats.length > 0);
 
-        onSave({ id: initial?.id, name: name || "", address: address || "", status, type, seatLayout: rows });
+        const capacity = rows.reduce((acc, row) => acc + row.seats.length, 0);
+
+        onSave({
+            _id: initial?._id,
+            name: name || "",
+            address: address || "",
+            status,
+            type,
+            seatLayout: rows,
+            seatRows: clampedRows,
+            seatsCols: clampedCols,
+            capacity,
+        });
         onClose();
     }
 
@@ -102,7 +132,7 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
             <div className="fixed inset-0 bg-black/40" onClick={onClose} />
             <div className="relative w-full max-w-5xl max-h-[97vh] overflow-auto bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 pt-3 shadow-lg">
                 <div className="p-2 flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Tạo phòng chiếu mới</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{initial?._id ? "Chỉnh sửa rạp" : "Tạo rạp mới"}</h3>
                     <button className="text-slate-400 hover:text-red-500 rounded-lg p-1 hover:bg-red-500/10 transition-colors" onClick={onClose}>
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -110,12 +140,12 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="">
-                        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Tên phòng</label>
+                        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Tên rạp</label>
                         <input
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className="w-full form-input rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary px-4 py-2.5 focus:border-primary focus:ring-primary"
-                            placeholder="Phòng IMAX"
+                            placeholder="Rạp IMAX"
                         />
                     </div>
                     <div>
@@ -134,10 +164,9 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
                             onChange={(e) => setType(e.target.value)}
                             className="w-full form-select rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white px-3 py-2"
                         >
-                            <option value="2D Standard">2D Standard</option>
-                            <option value="3D VIP">3D VIP</option>
-                            <option value="IMAX">IMAX</option>
-                            <option value="Custom">Custom</option>
+                            <option value="2dstandard">2D Tiêu chuẩn</option>
+                            <option value="3dvip">3D VIP</option>
+                            <option value="imax">IMAX</option>
                         </select>
                     </div>
                 </div>
@@ -174,8 +203,8 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
                             onChange={(e) => setStatus(e.target.value as any)}
                             className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white px-3 py-2 focus:border-primary focus:ring-primary"
                         >
-                            <option value="active">Hoạt động</option>
-                            <option value="maintenance">Bảo trì</option>
+                            <option value="open">Hoạt động</option>
+                            <option value="renovating">Đang nâng cấp</option>
                             <option value="closed">Đã đóng</option>
                         </select>
                     </div>
@@ -203,7 +232,7 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
                                         return (
                                             <button
                                                 key={id}
-                                                title={`${id} — ${available ? "Available" : "Unavailable"}`}
+                                                title={`${id} — ${available ? "Có sẵn" : "Không khả dụng"}`}
                                                 onClick={() => toggleState(id)}
                                                 onContextMenu={(e) => {
                                                     e.preventDefault();
@@ -224,8 +253,8 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
                 <div className="flex items-center justify-end gap-3 mt-3">
                     {(nameMissing || addressMissing || noSeats) && (
                         <div className="mt-2 text-xs text-rose-600 dark:text-rose-400 justify-start mr-auto">
-                            {nameMissing && <div>Tên phòng không được để trống.</div>}
-                            {addressMissing && <div>Địa chỉ không được để trống.</div>}
+                            {nameMissing && <div>Tên rạp không được để trống.</div>}
+                            {addressMissing && <div>Địa chỉ rạp không được để trống.</div>}
                             {noSeats && <div>Số hàng và số cột phải lớn hơn 0.</div>}
                         </div>
                     )}
