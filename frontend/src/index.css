@@ -1,1 +1,59 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #135bec;
+  --color-background-light: #f6f6f8;
+  --color-background-dark: #101622;
+  --color-surface-dark: #1a2332;
+  --color-text-secondary: #92a4c9;
+  
+  --font-display: "Spline Sans", sans-serif;
+  
+  --radius: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+}
+
+/* Additional color utilities for complex names */
+.text-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.bg-background-light {
+  background-color: var(--color-background-light);
+}
+
+.bg-background-dark {
+  background-color: var(--color-background-dark);
+}
+
+.bg-surface-dark {
+  background-color: var(--color-surface-dark);
+}
+
+/* Custom scrollbar for dark mode feel */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #101622; 
+}
+::-webkit-scrollbar-thumb {
+    background: #232f48; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #324467; 
+}
+
+/* Light mode scrollbar */
+:root:not(.dark) ::-webkit-scrollbar-track {
+    background: #f6f6f8; 
+}
+:root:not(.dark) ::-webkit-scrollbar-thumb {
+    background: #d1d5db; 
+}
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; 
+}
