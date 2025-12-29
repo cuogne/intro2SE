@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-http://localhost:3000
+http://localhost:{PORT}
 ```
 
 Tất cả API endpoints đều bắt đầu với base URL trên.
@@ -121,52 +121,61 @@ headers: {
 ---
 
 ## API Endpoints
-### User APIs
+### Authentication APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | [`/api/auth/register`](#11-đăng-ký-tài-khoản) | Đăng ký tài khoản mới (username, email, password) | No |
 | POST | [`/api/auth/login`](#12-đăng-nhập) | Đăng nhập và nhận token | No |
 
+### User APIs
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | [`/api/v1/users/me`](#21-lấy-thông-tin-tài-khoản-của-mình) | Lấy thông tin tài khoản của chính mình | Login |
+| PUT | [`/api/v1/users/me/update`](#22-cập-nhật-thông-tin-tài-khoản) | Cập nhật thông tin tài khoản (username, email) | Login |
+| DELETE | [`/api/v1/users/me`](#23-xóa-tài-khoản) | Xóa tài khoản của chính mình | Login |
+| GET | [`/api/v1/users/all`](#24-lấy-danh-sách-tất-cả-tài-khoản-admin-only) | Lấy danh sách tất cả tài khoản | Admin only |
+| GET | [`/api/v1/users/all/:id`](#25-lấy-thông-tin-tài-khoản-theo-id-admin-only) | Lấy thông tin tài khoản theo id | Admin only |
+
 ### Movie APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | [`/api/v1/movies`](#21-lấy-danh-sách-phim) | Lấy danh sách tất cả phim<br>Query params: `?page=&limit=&status=` | No |
-| GET | [`/api/v1/movies/:id`](#22-lấy-chi-tiết-phim) | Lấy chi tiết phim theo id | No |
-| POST | [`/api/v1/movies`](#23-tạo-phim-mới-admin-only) | Thêm phim mới | Admin only |
-| PUT | [`/api/v1/movies/:id`](#24-cập-nhật-phim-admin-only) | Cập nhật thông tin phim | Admin only |
-| DELETE | [`/api/v1/movies/:id`](#25-xóa-phim-admin-only) | Xoá phim | Admin only |
+| GET | [`/api/v1/movies`](#31-lấy-danh-sách-phim) | Lấy danh sách tất cả phim<br>Query params: `?page=&limit=&status=` | No |
+| GET | [`/api/v1/movies/:id`](#32-lấy-chi-tiết-phim) | Lấy chi tiết phim theo id | No |
+| POST | [`/api/v1/movies`](#33-tạo-phim-mới-admin-only) | Thêm phim mới | Admin only |
+| PUT | [`/api/v1/movies/:id`](#34-cập-nhật-phim-admin-only) | Cập nhật thông tin phim | Admin only |
+| DELETE | [`/api/v1/movies/:id`](#35-xóa-phim-admin-only) | Xoá phim | Admin only |
 
 ### Cinema APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | [`/api/v1/cinemas`](#31-lấy-danh-sách-rạp) | Lấy danh sách tất cả rạp | No |
-| GET | [`/api/v1/cinemas/:id`](#32-lấy-chi-tiết-rạp) | Lấy chi tiết rạp theo id | No |
-| POST | [`/api/v1/cinemas`](#33-tạo-rạp-mới-admin-only) | Thêm rạp mới | Admin only |
-| PUT | [`/api/v1/cinemas/:id`](#34-cập-nhật-rạp-admin-only) | Cập nhật thông tin rạp | Admin only |
-| DELETE | [`/api/v1/cinemas/:id`](#35-xóa-rạp-admin-only) | Xoá rạp | Admin only |
+| GET | [`/api/v1/cinemas`](#41-lấy-danh-sách-rạp) | Lấy danh sách tất cả rạp | No |
+| GET | [`/api/v1/cinemas/:id`](#42-lấy-chi-tiết-rạp) | Lấy chi tiết rạp theo id | No |
+| POST | [`/api/v1/cinemas`](#43-tạo-rạp-mới-admin-only) | Thêm rạp mới | Admin only |
+| PUT | [`/api/v1/cinemas/:id`](#44-cập-nhật-rạp-admin-only) | Cập nhật thông tin rạp | Admin only |
+| DELETE | [`/api/v1/cinemas/:id`](#45-xóa-rạp-admin-only) | Xoá rạp | Admin only |
 
 ### Showtime APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | [`/api/v1/showtimes`](#41-lấy-danh-sách-suất-chiếu) | Lấy danh sách tất cả suất chiếu<br>Query params: `?movieId=&cinemaId=&date=&page=&limit=` | No |
-| GET | [`/api/v1/showtimes/:id`](#42-lấy-chi-tiết-suất-chiếu-với-trạng-thái-ghế) | Lấy chi tiết suất chiếu theo id | No |
-| POST | [`/api/v1/showtimes`](#43-tạo-suất-chiếu-mới-admin-only) | Thêm suất chiếu mới | Admin only |
-| PUT | [`/api/v1/showtimes/:id`](#44-cập-nhật-suất-chiếu-admin-only) | Cập nhật thông tin suất chiếu | Admin only |
-| DELETE | [`/api/v1/showtimes/:id`](#45-xóa-suất-chiếu-admin-only) | Xoá suất chiếu | Admin only |
+| GET | [`/api/v1/showtimes`](#51-lấy-danh-sách-suất-chiếu) | Lấy danh sách tất cả suất chiếu<br>Query params: `?movieId=&cinemaId=&date=&page=&limit=` | No |
+| GET | [`/api/v1/showtimes/:id`](#52-lấy-chi-tiết-suất-chiếu-với-trạng-thái-ghế) | Lấy chi tiết suất chiếu theo id | No |
+| POST | [`/api/v1/showtimes`](#53-tạo-suất-chiếu-mới-admin-only) | Thêm suất chiếu mới | Admin only |
+| PUT | [`/api/v1/showtimes/:id`](#54-cập-nhật-suất-chiếu-admin-only) | Cập nhật thông tin suất chiếu | Admin only |
+| DELETE | [`/api/v1/showtimes/:id`](#55-xóa-suất-chiếu-admin-only) | Xoá suất chiếu | Admin only |
 
 ### Booking APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | [`/api/v1/bookings`](#53-lấy-danh-sách-booking-của-user) | Lấy danh sách vé đã đặt của user | Login |
-| GET | [`/api/v1/bookings/:id`](#54-lấy-chi-tiết-booking) | Lấy chi tiết vé đã đặt theo id | Login |
-| POST | [`/api/v1/bookings`](#51-tạo-booking-khi-chọn-ghế-đầu-tiên) | Tạo booking khi chọn ghế đầu tiên (hoặc update nếu đã có) | Login |
-| PATCH | [`/api/v1/bookings/:id/seats`](#52-thêm-bớt-ghế) | Thêm/bớt ghế vào booking hiện có | Login |
+| GET | [`/api/v1/bookings`](#63-lấy-danh-sách-booking-của-user) | Lấy danh sách vé đã đặt của user | Login |
+| GET | [`/api/v1/bookings/:id`](#64-lấy-chi-tiết-booking) | Lấy chi tiết vé đã đặt theo id | Login |
+| POST | [`/api/v1/bookings`](#61-tạo-booking-khi-chọn-ghế-đầu-tiên) | Tạo booking khi chọn ghế đầu tiên (hoặc update nếu đã có) | Login |
+| PATCH | [`/api/v1/bookings/:id/seats`](#62-thêm-bớt-ghế) | Thêm/bớt ghế vào booking hiện có | Login |
 
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | [`/api/v1/payments`](#61-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
-| POST | [`/api/v1/payments/callback`](#62-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
+| POST | [`/api/v1/payments`](#71-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
+| POST | [`/api/v1/payments/callback`](#72-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
 
 ### 1. Authentication APIs
 
@@ -240,9 +249,173 @@ Token này sẽ được lưu lại vào cookie của browser để sử dụng 
 
 ---
 
-### 2. Movie APIs
+### 2. User APIs
 
-#### 2.1. Lấy danh sách phim
+#### 2.1. Lấy thông tin tài khoản của mình
+
+**Endpoint:** `GET /api/v1/users/me`
+
+**Authentication:** Required (Login)
+
+**Mô tả:** API này dùng để lấy thông tin tài khoản của chính user đang đăng nhập.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "username": "john_doe",
+    "email": "john@example.com",
+    "role": "user",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Lưu ý:** Password không được trả về trong response.
+
+---
+
+#### 2.2. Cập nhật thông tin tài khoản
+
+**Endpoint:** `PUT /api/v1/users/me/update`
+
+**Authentication:** Required (Login)
+
+**Mô tả:** API này dùng để cập nhật thông tin tài khoản của chính mình (username và email).
+
+**Lưu ý:**
+- Chỉ có thể cập nhật `username` và `email`
+- Không thể cập nhật `role` hoặc `password`
+- User chỉ có thể cập nhật chính tài khoản của mình (tự động lấy từ token)
+
+**Request Body:**
+```json
+{
+  "username": "new_username",
+  "email": "newemail@example.com"
+}
+```
+
+**Validation:**
+- Phải có ít nhất 1 field (username hoặc email)
+- Username: 3-15 ký tự, chỉ chứa chữ, số và underscore
+- Email: Phải đúng format email
+- Username và email phải unique (không trùng với user khác)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Account updated successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "username": "new_username",
+    "email": "newemail@example.com",
+    "role": "user",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### 2.3. Xóa tài khoản
+
+**Endpoint:** `DELETE /api/v1/users/me`
+
+**Authentication:** Required (Login)
+
+**Mô tả:** API này dùng để xóa tài khoản của chính mình.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "account deleted successfully"
+}
+```
+
+---
+
+#### 2.4. Lấy danh sách tất cả tài khoản (Admin only)
+
+**Endpoint:** `GET /api/v1/users/all`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy danh sách tất cả tài khoản trong hệ thống. Chỉ admin mới có quyền truy cập.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "username": "john_doe",
+      "email": "john@example.com",
+      "role": "user",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "username": "admin_user",
+      "email": "admin@example.com",
+      "role": "admin",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Response (403 Forbidden) - User thường cố gắng truy cập:**
+```json
+{
+  "success": false,
+  "message": "Forbidden: Admins only"
+}
+```
+
+**Lưu ý:** Password không được trả về trong response.
+
+---
+
+#### 2.5. Lấy thông tin tài khoản theo id (Admin only)
+
+**Endpoint:** `GET /api/v1/users/all/:id`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy thông tin chi tiết của một tài khoản theo id. Chỉ admin mới có quyền truy cập.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "username": "john_doe",
+    "email": "john@example.com",
+    "role": "user",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Lưu ý:** Password không được trả về trong response.
+
+---
+
+### 3. Movie APIs
+
+#### 3.1. Lấy danh sách phim
 
 **Endpoint:** `GET /api/v1/movies`
 
@@ -291,7 +464,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 2.2. Lấy chi tiết phim
+#### 3.2. Lấy chi tiết phim
 
 **Endpoint:** `GET /api/v1/movies/:id`
 
@@ -319,7 +492,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 2.3. Tạo phim mới (Admin only)
+#### 3.3. Tạo phim mới (Admin only)
 
 **Endpoint:** `POST /api/v1/movies`
 
@@ -355,7 +528,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 2.4. Cập nhật phim (Admin only)
+#### 3.4. Cập nhật phim (Admin only)
 
 **Endpoint:** `PUT /api/v1/movies/:id`
 
@@ -367,7 +540,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 2.5. Xóa phim (Admin only)
+#### 3.5. Xóa phim (Admin only)
 
 **Endpoint:** `DELETE /api/v1/movies/:id`
 
@@ -377,9 +550,9 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-### 3. Cinema APIs
+### 4. Cinema APIs
 
-#### 3.1. Lấy danh sách rạp
+#### 4.1. Lấy danh sách rạp
 
 **Endpoint:** `GET /api/v1/cinemas`
 
@@ -396,6 +569,8 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
       "_id": "507f1f77bcf86cd799439012",
       "name": "Cinemax Sinh Viên",
       "address": "Nhà văn hóa sinh viên, TP.HCM",
+      "rows": 5,
+      "columns": 2,
       "seatLayout": [
         {
           "row": "A",
@@ -413,7 +588,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 3.2. Lấy chi tiết rạp
+#### 4.2. Lấy chi tiết rạp
 
 **Endpoint:** `GET /api/v1/cinemas/:id`
 
@@ -423,7 +598,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 3.3. Tạo rạp mới (Admin only)
+#### 4.3. Tạo rạp mới (Admin only)
 
 **Endpoint:** `POST /api/v1/cinemas`
 
@@ -436,22 +611,16 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 {
   "name": "Cinemax Sinh Viên",
   "address": "Nhà văn hóa sinh viên, TP.HCM",
-  "seatLayout": [
-    {
-      "row": "A",
-      "seats": ["A1", "A2", "A3", "A4", "A5"]
-    },
-    {
-      "row": "B",
-      "seats": ["B1", "B2", "B3", "B4", "B5"]
-    }
-  ]
+  "rows": 5,
+  "columns": 2,
 }
 ```
 
+Layout ghế sẽ tự động được tạo dựa trên `rows` và `columns`.
+
 ---
 
-#### 3.4. Cập nhật rạp (Admin only)
+#### 4.4. Cập nhật rạp (Admin only)
 
 **Endpoint:** `PUT /api/v1/cinemas/:id`
 
@@ -461,7 +630,7 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-#### 3.5. Xóa rạp (Admin only)
+#### 4.5. Xóa rạp (Admin only)
 
 **Endpoint:** `DELETE /api/v1/cinemas/:id`
 
@@ -471,9 +640,9 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 
 ---
 
-### 4. Showtime APIs
+### 5. Showtime APIs
 
-#### 4.1. Lấy danh sách suất chiếu
+#### 5.1. Lấy danh sách suất chiếu
 
 **Endpoint:** `GET /api/v1/showtimes`
 
@@ -529,7 +698,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 4.2. Lấy chi tiết suất chiếu (với trạng thái ghế)
+#### 5.2. Lấy chi tiết suất chiếu (với trạng thái ghế)
 
 **Endpoint:** `GET /api/v1/showtimes/:id`
 
@@ -595,7 +764,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 4.3. Tạo suất chiếu mới (Admin only)
+#### 5.3. Tạo suất chiếu mới (Admin only)
 
 **Endpoint:** `POST /api/v1/showtimes`
 
@@ -619,7 +788,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 4.4. Cập nhật suất chiếu (Admin only)
+#### 5.4. Cập nhật suất chiếu (Admin only)
 
 **Endpoint:** `PUT /api/v1/showtimes/:id`
 
@@ -629,7 +798,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 4.5. Xóa suất chiếu (Admin only)
+#### 5.5. Xóa suất chiếu (Admin only)
 
 **Endpoint:** `DELETE /api/v1/showtimes/:id`
 
@@ -639,9 +808,9 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-### 5. Booking APIs
+### 6. Booking APIs
 
-#### 5.1. Tạo booking khi chọn ghế đầu tiên
+#### 6.1. Tạo booking khi chọn ghế đầu tiên
 
 **Endpoint:** `POST /api/v1/bookings`
 
@@ -689,7 +858,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 5.2. Thêm/bớt ghế
+#### 6.2. Thêm/bớt ghế
 
 **Endpoint:** `PATCH /api/v1/bookings/:id/seats`
 
@@ -749,7 +918,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 5.3. Lấy danh sách booking của user
+#### 6.3. Lấy danh sách booking của user
 
 **Endpoint:** `GET /api/v1/bookings`
 
@@ -796,7 +965,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-#### 5.4. Lấy chi tiết booking
+#### 6.4. Lấy chi tiết booking
 
 **Endpoint:** `GET /api/v1/bookings/:id`
 
@@ -825,9 +994,9 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
-### 6. Payment APIs
+### 7. Payment APIs
 
-#### 6.1. Tạo order thanh toán Zalopay
+#### 7.1. Tạo order thanh toán Zalopay
 
 **Endpoint:** `POST /api/v1/payments`
 
@@ -864,7 +1033,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 - Frontend sẽ sử dụng `order_url` để chuyển hướng người dùng đến trang thanh toán của ZaloPay.
 ---
 
-#### 6.2. Callback từ Zalopay
+#### 7.2. Callback từ Zalopay
 
 **Endpoint:** `POST /api/v1/payments/callback`
 

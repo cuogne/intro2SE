@@ -1,40 +1,106 @@
 const userService = require('../services/user.service')
 
-const register = async (req, res) => {
+const getMyAccount = async (req, res) => {
     try {
-        const {username, email, password} = req.body
-        const newUser = await userService.register({ username, email, password })
-        res.status(201).json({
+        const userId = req.user.id
+        const account = await userService.getAccountById(userId)
+        res.status(200).json({
             success: true,
-            data: newUser
+            data: account
         })
-    } catch (error) {
+    }
+    catch (error) {
         res.status(400).json({
             success: false,
-            message: 'error registering user',
+            message: 'error getting my account',
             error: error.message
         })
     }
 }
 
-const login = async (req, res) => {
+const getAllAccounts = async (req, res) => {
     try {
-        const {username, password} = req.body
-        const { user, token } = await userService.login({ username, password})
+        const accounts = await userService.getAllAccounts()
         res.status(200).json({
             success: true,
-            data: { user, token }
+            data: accounts
         })
-    } catch (error) {
+    }
+    catch (error) {
         res.status(400).json({
             success: false,
-            message: 'error logging in',
+            message: 'error getting all accounts',
+            error: error.message
+        })
+    }
+}
+
+const getAccountById = async (req, res) => {
+    try {
+        const { id } = req.params
+        const account = await userService.getAccountById(id)
+        res.status(200).json({
+            success: true,
+            data: account
+        })
+    }
+    catch (error) {
+        res.status(400).json({
+            success: false,
+            message: 'error getting account by id',
+            error: error.message
+        })
+    }
+}
+
+const deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user.id // Lấy từ token,
+        await userService.deleteAccount(userId)
+        res.status(200).json({
+            success: true,
+            message: 'account deleted successfully'
+        })
+    }
+    catch (error) {
+        res.status(400).json({
+            success: false,
+            message: 'error deleting account',
+            error: error.message
+        })
+    }
+}
+
+const updateAccount = async (req, res) => {
+    try {
+        const userId = req.user.id // Lấy từ token
+        const { username, email } = req.body
+
+        const updatedUser = await userService.updateAccount(
+            userId,
+            { username, email },
+            userId
+        )
+
+        res.status(200).json({
+            success: true,
+            message: 'Account updated successfully',
+            data: updatedUser
+        })
+    }
+    catch (error) {
+        res.status(400).json({
+            success: false,
+            message: 'Error updating account',
             error: error.message
         })
     }
 }
 
 module.exports = {
-    register,
-    login
+    getMyAccount,
+    getAllAccounts,
+    getAccountById,
+    deleteAccount,
+    updateAccount
 }

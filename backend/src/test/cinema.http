@@ -8,8 +8,8 @@ Content-Type: application/json
 
 {
   // tai khoan admin
-  "username": "",
-  "password": ""
+  "username": "taolaadmin",
+  "password": "admin123"
 }
 
 ### luu token vao bien
@@ -27,61 +27,8 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-    "name": "Cinemax Sinh Viên",
-    "address": "Nhà Văn Hóa Sinh Viên, Đông Hoà, Dĩ An, Bình Dương",
-    "seatLayout": [
-        {
-            "row": "A",
-            "seats": ["A1", "A2", "A3", "A4", "A5"]
-        },
-        {
-            "row": "B",
-            "seats": ["B1", "B2", "B3", "B4", "B5"]
-        },
-        {
-            "row": "C",
-            "seats": ["C1", "C2", "C3", "C4", "C5"]
-        },
-        {
-            "row": "D",
-            "seats": ["D1", "D2", "D3", "D4", "D5"]
-        },
-        {
-            "row": "E",
-            "seats": ["E1", "E2", "E3", "E4", "E5"]
-        }
-    ]
-}
-
-### create cinema
-# @name createCinema2
-POST {{baseUrl}}/cinemas
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-{
-    "name": "Cinemax Thủ Đức",
-    "address": "216 Đ. Võ Văn Ngân, Bình Thọ, Thủ Đức, Thành phố Hồ Chí Minh",
-    "seatLayout": [
-        {
-            "row": "A",
-            "seats": ["A1", "A2", "A3", "A4", "A5", "A6"]
-        },
-        {
-            "row": "B",
-            "seats": ["B1", "B2", "B3", "B4", "B5", "B6"]
-        },
-        {
-            "row": "C",
-            "seats": ["C1", "C2", "C3", "C4", "C5", "C6"]
-        },
-        {
-            "row": "D",
-            "seats": ["D1", "D2", "D3", "D4", "D5", "D6"]
-        },
-        {
-            "row": "E",
-            "seats": ["E1", "E2", "E3", "E4", "E5", "E6"]
-        }
-    ]
+    "name": "Cinemax Quận 1",
+    "address": "Quận 1, Thành phố Hồ Chí Minh",
+    "rows": 5,
+    "columns": 5
 }

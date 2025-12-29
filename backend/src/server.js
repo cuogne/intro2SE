@@ -2,18 +2,21 @@ const app = require('./app');
 const movieRoute = require('./routes/movie.route');
 const cinemaRoute = require('./routes/cinema.route');
 const showtimeRoute = require('./routes/showtime.route');
-const userRoute = require('./routes/user.route');
+const authRoute = require('./routes/auth.route');
 const bookingRoute = require('./routes/booking.route');
 const paymentRoute = require('./routes/payment.route');
+const userRoute = require('./routes/user.route');
 const connectMongoDB = require('./config/mongodb.config');
 const { startCleanupJob } = require('./utils/cleanupJob');
+require('dotenv').config();
 
-const PORT = 3000;
+const PORT = process.env.PORT;
 
 app.use('/api/v1/movies', movieRoute);
 app.use('/api/v1/cinemas', cinemaRoute);
 app.use('/api/v1/showtimes', showtimeRoute);
-app.use('/api/auth', userRoute);
+app.use('/api/auth', authRoute);
+app.use('/api/v1/users', userRoute);
 app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/payments', paymentRoute);
 
