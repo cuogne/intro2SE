@@ -396,6 +396,8 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
       "_id": "507f1f77bcf86cd799439012",
       "name": "Cinemax Sinh Viên",
       "address": "Nhà văn hóa sinh viên, TP.HCM",
+      "rows": 5,
+      "columns": 2,
       "seatLayout": [
         {
           "row": "A",
@@ -436,18 +438,12 @@ GET /api/v1/movies?status=now_showing&page=1&limit=8
 {
   "name": "Cinemax Sinh Viên",
   "address": "Nhà văn hóa sinh viên, TP.HCM",
-  "seatLayout": [
-    {
-      "row": "A",
-      "seats": ["A1", "A2", "A3", "A4", "A5"]
-    },
-    {
-      "row": "B",
-      "seats": ["B1", "B2", "B3", "B4", "B5"]
-    }
-  ]
+  "rows": 5,
+  "columns": 2,
 }
 ```
+
+Layout ghế sẽ tự động được tạo dựa trên `rows` và `columns`.
 
 ---
 
