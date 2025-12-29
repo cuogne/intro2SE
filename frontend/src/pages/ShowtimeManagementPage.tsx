@@ -1,69 +1,93 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../index.css";
-// Inlined type: Showtime and ShowtimeStatus
+import { Pagination as AntPagination, ConfigProvider, theme, notification, Spin } from "antd";
+import { fetchShowtimes, createShowtime, updateShowtime, deleteShowtime, type ShowtimeListItem, type Pagination as PagingInfo } from "../services/showtimeService";
+import { fetchCinemas, type Cinema } from "../services/cinemaService";
+import ShowtimeFormModal from "../components/ShowtimeFormModal";
+import { useTheme } from "../context/ThemeContext";
+
 type ShowtimeStatus = "upcoming" | "running" | "done";
 
-interface Showtime {
-    id: string;
-    code: string;
-    title: string;
-    duration: string;
-    genre: string;
-    startTime: string; // e.g. "19:30"
-    endTime: string; // e.g. "22:31"
-    date: string; // e.g. "2023-10-24"
-    room: string;
-    status: ShowtimeStatus;
-}
-import ShowtimeFormModal from "../components/ShowtimeFormModal";
-
-const SAMPLE_SHOWTIMES: Showtime[] = [
-    { id: "1", code: "S001", title: "Avengers: Endgame", duration: "3h 01m", genre: "Hành động", startTime: "19:30", endTime: "22:31", date: "2023-10-24", room: "Phòng IMAX", status: "upcoming" },
-    { id: "2", code: "S002", title: "Barbie", duration: "1h 54m", genre: "Hài hước", startTime: "20:00", endTime: "21:54", date: "2023-10-24", room: "Phòng 02", status: "running" },
-    { id: "3", code: "S003", title: "Oppenheimer", duration: "3h 00m", genre: "Lịch sử", startTime: "14:00", endTime: "17:00", date: "2023-10-24", room: "Phòng IMAX", status: "done" },
-    { id: "4", code: "S004", title: "Spider-Man: No Way Home", duration: "2h 28m", genre: "Hành động", startTime: "15:00", endTime: "17:28", date: "2023-10-24", room: "Phòng 01", status: "upcoming" },
-    { id: "5", code: "S005", title: "The Batman", duration: "2h 55m", genre: "Hành động", startTime: "18:00", endTime: "20:55", date: "2023-10-25", room: "Phòng IMAX", status: "upcoming" },
-    { id: "6", code: "S006", title: "Toy Story 4", duration: "1h 40m", genre: "Hoạt hình", startTime: "10:00", endTime: "11:40", date: "2023-10-25", room: "Phòng 02", status: "done" },
-    { id: "7", code: "S007", title: "Dune", duration: "2h 35m", genre: "Khoa học", startTime: "21:00", endTime: "23:35", date: "2023-10-25", room: "Phòng IMAX", status: "running" },
-    { id: "8", code: "S008", title: "Top Gun: Maverick", duration: "2h 5m", genre: "Hành động", startTime: "17:00", endTime: "19:05", date: "2023-10-26", room: "Phòng 01", status: "upcoming" },
-    { id: "9", code: "S009", title: "Joker", duration: "2h 2m", genre: "Chính kịch", startTime: "12:00", endTime: "14:02", date: "2023-10-26", room: "Phòng 02", status: "upcoming" },
-    { id: "10", code: "S010", title: "Interstellar", duration: "2h 49m", genre: "Khoa học", startTime: "20:00", endTime: "22:49", date: "2023-10-26", room: "Phòng IMAX", status: "upcoming" },
-    { id: "11", code: "S011", title: "The Matrix", duration: "2h 16m", genre: "Khoa học", startTime: "13:00", endTime: "15:16", date: "2023-10-27", room: "Phòng 01", status: "upcoming" },
-    { id: "12", code: "S012", title: "Sonic The Hedgehog", duration: "1h 40m", genre: "Phiêu lưu", startTime: "11:00", endTime: "12:40", date: "2023-10-27", room: "Phòng 02", status: "done" },
-    {
-        id: "13",
-        code: "S013",
-        title: "Guardians of the Galaxy",
-        duration: "2h 1m",
-        genre: "Hành động",
-        startTime: "19:00",
-        endTime: "21:01",
-        date: "2023-10-27",
-        room: "Phòng IMAX",
-        status: "running",
-    },
-    { id: "14", code: "S014", title: "Frozen II", duration: "1h 43m", genre: "Hoạt hình", startTime: "09:30", endTime: "11:13", date: "2023-10-28", room: "Phòng 02", status: "upcoming" },
-    { id: "15", code: "S015", title: "Inception", duration: "2h 28m", genre: "Khoa học", startTime: "22:00", endTime: "00:28", date: "2023-10-28", room: "Phòng IMAX", status: "upcoming" },
-];
-
 const ShowtimeManagementPage: React.FC = () => {
-    const [showtimes, setShowtimes] = useState<Showtime[]>(SAMPLE_SHOWTIMES);
+    const { isDarkTheme } = useTheme();
+    const [showtimes, setShowtimes] = useState<ShowtimeListItem[]>([]);
 
     const [search, setSearch] = useState("");
     const [filterDate, setFilterDate] = useState("");
-    const [filterRoom, setFilterRoom] = useState("");
+    const [filterCinemaId, setFilterCinemaId] = useState("");
+    const [cinemas, setCinemas] = useState<Cinema[]>([]);
+
+    const PAGE_SIZE = 10;
+    const [paginationInfo, setPaginationInfo] = useState<PagingInfo | null>(null);
 
     const [page, setPage] = useState(1);
-    const pageSize = 5; // fixed page size (no selector)
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const load = async () => {
+        setIsLoading(true);
+        try {
+            const filters: any = {};
+            if (filterDate) filters.date = filterDate;
+            if (filterCinemaId) filters.cinemaId = filterCinemaId;
+
+            const { docs, pagination } = await fetchShowtimes(page, PAGE_SIZE, filters);
+            setShowtimes(docs);
+            setPaginationInfo(pagination ?? null);
+        } catch (e) {
+            console.error("Lỗi tải danh sách suất chiếu:", e);
+            setShowtimes([]);
+            setPaginationInfo(null);
+            notification.error({ message: "Lỗi tải danh sách suất chiếu" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // Load list from service per page (10 items per page)
+        load();
+    }, [page, filterDate, filterCinemaId]);
+
+    // Fetch cinemas for the room selector
+    useEffect(() => {
+        const loadCinemas = async () => {
+            try {
+                const data = await fetchCinemas();
+                setCinemas(data || []);
+            } catch (e) {
+                console.error("Lỗi tải danh sách rạp:", e);
+                setCinemas([]);
+            }
+        };
+        loadCinemas();
+    }, []);
 
     const [modalOpen, setModalOpen] = useState(false);
-    const [editing, setEditing] = useState<Showtime | undefined>(undefined);
+    const [editing, setEditing] = useState<ShowtimeListItem | undefined>(undefined);
+
+    function computeStatus(startISO: string, endISO: string | undefined, minutes?: number): ShowtimeStatus {
+        const now = new Date();
+        const start = new Date(startISO);
+        let end: Date;
+        if (endISO && !isNaN(Date.parse(endISO))) end = new Date(endISO);
+        else {
+            end = new Date(start);
+            const roundedHours = minutes ? Math.ceil(minutes / 60) : 1;
+            end.setHours(end.getHours() + roundedHours);
+        }
+        if (now < start) return "upcoming";
+        if (now >= start && now < end) return "running";
+        return "done";
+    }
 
     function openAdd() {
         setEditing(undefined);
         setModalOpen(true);
     }
-    function openEdit(s: Showtime) {
+    function openEdit(s: ShowtimeListItem) {
         setEditing(s);
         setModalOpen(true);
     }
@@ -71,59 +95,101 @@ const ShowtimeManagementPage: React.FC = () => {
         setEditing(undefined);
         setModalOpen(false);
     }
-    function handleSave(s: Showtime) {
-        setShowtimes((prev) => {
-            const exists = prev.find((p) => p.id === s.id);
-            if (exists) {
-                return prev.map((p) => (p.id === s.id ? s : p));
+    // s comes from the modal (different shape). Map to ShowtimeListItem before saving locally
+    async function handleSave(s: any) {
+        setIsSaving(true);
+        try {
+            // s: { id?, movieId, cinemaId, startTime: ISO, endTime: ISO, price }
+            if (s.id) {
+                const updated = await updateShowtime(s.id, {
+                    movie: s.movieId,
+                    cinema: s.cinemaId,
+                    startTime: s.startTime,
+                    endTime: s.endTime,
+                    price: s.price,
+                });
+                if (updated) {
+                    load();
+                    notification.success({ message: "Cập nhật suất chiếu thành công" });
+                } else {
+                    notification.error({ message: "Cập nhật suất chiếu thất bại" });
+                }
+            } else {
+                const created = await createShowtime({ movieId: s.movieId, cinemaId: s.cinemaId, startTime: s.startTime, endTime: s.endTime, price: s.price });
+                if (created) {
+                    load();
+                    notification.success({ message: "Tạo suất chiếu thành công" });
+                } else {
+                    notification.error({ message: "Tạo suất chiếu thất bại" });
+                }
             }
-            return [s, ...prev];
-        });
-        closeModal();
-        setPage(1);
-    }
-    function handleDelete(id: string) {
-        if (!confirm("Bạn có chắc muốn xóa suất chiếu này?")) return;
-        setShowtimes((prev) => prev.filter((p) => p.id !== id));
+        } catch (error) {
+            console.error("Lỗi khi lưu suất chiếu:", error);
+            notification.error({ message: "Lỗi khi lưu suất chiếu" });
+        } finally {
+            setIsSaving(false);
+            closeModal();
+        }
     }
 
-    const rooms = useMemo(() => Array.from(new Set(showtimes.map((s) => s.room))), [showtimes]);
+    async function handleDelete(id: string) {
+        if (!confirm("Bạn có chắc muốn xóa suất chiếu này?")) return;
+        setDeletingId(id);
+        try {
+            const success = await deleteShowtime(id);
+            if (success) {
+                load();
+                notification.success({ message: "Xóa suất chiếu thành công" });
+            } else {
+                notification.error({ message: "Xóa suất chiếu thất bại" });
+            }
+        } catch (e) {
+            console.error("Lỗi khi xóa suất chiếu:", e);
+            notification.error({ message: "Xóa suất chiếu thất bại" });
+        } finally {
+            setDeletingId(null);
+        }
+    }
+
+    // Refresh statuses periodically (every minute) to keep 'running' state accurate
+    useEffect(() => {
+        const t = setInterval(() => {
+            // Force re-render so computed statuses update
+            setShowtimes((prev) => [...prev]);
+        }, 60 * 1000);
+        return () => clearInterval(t);
+    }, []);
 
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
         return showtimes.filter((s) => {
-            if (q && !s.title.toLowerCase().includes(q)) return false;
-            if (filterDate && s.date !== filterDate) return false;
-            if (filterRoom && filterRoom !== "All" && s.room !== filterRoom) return false;
+            if (q && !(s.movie?.title ?? "").toLowerCase().includes(q)) return false;
+            const sDate = new Date(s.startTime).toISOString().slice(0, 10);
+            if (filterDate && sDate !== filterDate) return false;
+            if (filterCinemaId && s.cinema?._id !== filterCinemaId) return false;
             return true;
         });
-    }, [showtimes, search, filterDate, filterRoom]);
+    }, [showtimes, search, filterDate, filterCinemaId]);
 
-    const total = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    // With server-side pagination we only have current page items in `showtimes`.
+    const totalDocs = paginationInfo?.totalDocs ?? filtered.length;
+    const currentStart = (page - 1) * PAGE_SIZE + 1;
+    const currentEnd = currentStart + filtered.length - 1;
 
-    // clamp page
-    if (page > totalPages) {
-        setPage(totalPages);
-    }
-
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = Math.min(total, startIndex + pageSize);
-
-    const current = filtered.slice(startIndex, endIndex);
+    const current = filtered; // contains items for current page (already fetched)
 
     function statusBadge(s: ShowtimeStatus) {
         switch (s) {
             case "upcoming":
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                    <span className="inline-flex items-center truncate gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                         <span className="size-1.5 rounded-full bg-emerald-500"></span>
                         Sắp chiếu
                     </span>
                 );
             case "running":
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+                    <span className="inline-flex items-center truncate gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
                         <span className="size-1.5 rounded-full bg-blue-500"></span>
                         Đang chiếu
                     </span>
@@ -131,7 +197,7 @@ const ShowtimeManagementPage: React.FC = () => {
             case "done":
             default:
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-500/20">
+                    <span className="inline-flex items-center truncate gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-500/20">
                         <span className="size-1.5 rounded-full bg-slate-500"></span>
                         Đã xong
                     </span>
@@ -139,7 +205,25 @@ const ShowtimeManagementPage: React.FC = () => {
         }
     }
 
+    function formatISOToVN(isoString: string | undefined): string {
+        if (!isoString) return "";
+        const date = new Date(isoString);
+
+        const dd = String(date.getDate()).padStart(2, "0");
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const yyyy = String(date.getFullYear());
+        const hh = String(date.getHours()).padStart(2, "0");
+        const min = String(date.getMinutes()).padStart(2, "0");
+
+        return `${hh}:${min} - ${dd}/${mm}/${yyyy}`;
+    }
+
+    function minuteToDurationStr(minutes: number | undefined): string {
+        return minutes ? `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m` : "";
+    }
+
     function goToPage(n: number) {
+        const totalPages = paginationInfo ? paginationInfo.totalPages : 1;
         if (n < 1) n = 1;
         if (n > totalPages) n = totalPages;
         setPage(n);
@@ -196,17 +280,17 @@ const ShowtimeManagementPage: React.FC = () => {
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-secondary text-[20px]">theaters</span>
                             <select
-                                value={filterRoom}
+                                value={filterCinemaId}
                                 onChange={(e) => {
-                                    setFilterRoom(e.target.value);
+                                    setFilterCinemaId(e.target.value);
                                     setPage(1);
                                 }}
                                 className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white pl-10 h-11 focus:border-primary focus:ring-primary text-sm cursor-pointer"
                             >
                                 <option value="">Tất cả phòng</option>
-                                {rooms.map((r) => (
-                                    <option key={r} value={r}>
-                                        {r}
+                                {cinemas.map((c) => (
+                                    <option key={c._id} value={c._id}>
+                                        {c.name}
                                     </option>
                                 ))}
                             </select>
@@ -217,117 +301,130 @@ const ShowtimeManagementPage: React.FC = () => {
 
             <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 dark:bg-[#111318] border-b border-slate-200 dark:border-border-dark">
-                                <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider w-24">Mã suất</th>
-                                <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Tên phim</th>
-                                <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Thời gian</th>
-                                <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Phòng chiếu</th>
-                                <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Trạng thái</th>
-                                <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider text-right">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                            {current.map((s) => (
-                                <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-border-dark/50 transition-colors group">
-                                    <td className="p-4 text-sm font-medium text-slate-500 dark:text-text-secondary">{s.code}</td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="size-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center overflow-hidden">
-                                                <span className="material-symbols-outlined text-[20px]">movie</span>
+                    <Spin spinning={isLoading} tip="Đang tải...">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 dark:bg-[#111318] border-b border-slate-200 dark:border-border-dark">
+                                    <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Tên phim</th>
+                                    <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Giá vé</th>
+                                    <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Thời gian</th>
+                                    <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Phòng chiếu</th>
+                                    <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider">Trạng thái</th>
+                                    <th className="p-4 text-xs font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider text-right">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
+                                {current.map((s) => (
+                                    <tr key={s._id} className="hover:bg-slate-50 dark:hover:bg-border-dark/50 transition-colors group">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-sky-600 dark:text-indigo-400 flex items-center justify-center overflow-hidden">
+                                                    {s.movie?.posterImg ? (
+                                                        <img src={s.movie?.posterImg} alt={s.movie?.title} className="w-10 h-14 object-cover rounded" />
+                                                    ) : (
+                                                        <span className="material-symbols-outlined text-[20px]">movie</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-120">{s.movie?.title}</span>
+                                                    <span className="text-xs text-slate-500 dark:text-text-secondary">{minuteToDurationStr(s.movie?.minutes)}</span>
+                                                </div>
                                             </div>
+                                        </td>
+                                        <td className="p-4 text-sm text-slate-900 dark:text-white font-medium">{s.price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</td>
+                                        <td className="p-4">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-slate-900 dark:text-white">{s.title}</span>
-                                                <span className="text-xs text-slate-500 dark:text-text-secondary">
-                                                    {s.duration} • {s.genre}
-                                                </span>
+                                                <span className="text-sm truncate text-slate-900 dark:text-white font-medium">{formatISOToVN(s.startTime)}</span>
+                                                <span className="text-sm truncate text-slate-900 dark:text-white font-medium">{formatISOToVN(s.endTime)}</span>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm text-slate-900 dark:text-white font-medium">
-                                                {s.startTime} - {s.endTime}
-                                            </span>
-                                            <span className="text-xs text-slate-500 dark:text-text-secondary">{new Date(s.date).toLocaleDateString()}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{s.room}</td>
-                                    <td className="p-4">{statusBadge(s.status)}</td>
-                                    <td className="p-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => openEdit(s)}
-                                                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-border-dark text-slate-400 hover:text-primary transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(s.id)}
-                                                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">delete</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{s.cinema?.name}</td>
+                                        <td className="p-4">{statusBadge(computeStatus(s.startTime, s.endTime, s.movie?.minutes))}</td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => openEdit(s)}
+                                                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-border-dark text-slate-400 hover:text-primary transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px]">edit</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(s._id)}
+                                                    disabled={deletingId === s._id}
+                                                    className={`p-2 rounded-lg ${
+                                                        deletingId === s._id ? "opacity-60 pointer-events-none" : "hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    } text-slate-400 hover:text-red-500 transition-colors`}
+                                                >
+                                                    {deletingId === s._id ? (
+                                                        <span className="material-symbols-outlined text-[20px] animate-spin">autorenew</span>
+                                                    ) : (
+                                                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
 
-                            {current.length === 0 && (
-                                <tr>
-                                    <td className="p-4 text-sm text-slate-500 dark:text-text-secondary" colSpan={6}>
-                                        Không có kết quả
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                {current.length === 0 && (
+                                    <tr>
+                                        <td className="p-4 text-sm text-slate-500 dark:text-text-secondary" colSpan={5}>
+                                            Không có kết quả
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </Spin>
                 </div>
 
                 <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318]">
                     <div className="text-sm text-slate-500 dark:text-text-secondary">
-                        Hiển thị {startIndex + 1 <= total ? startIndex + 1 : 0} - {endIndex} của {total} suất chiếu
+                        Hiển thị {currentStart <= totalDocs ? currentStart : 0} - {currentEnd <= totalDocs ? currentEnd : 0} của {totalDocs} suất chiếu
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => goToPage(page - 1)}
-                            disabled={page === 1}
-                            className="flex size-9 items-center justify-center rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-400 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors disabled:opacity-50"
+                        <ConfigProvider
+                            theme={{
+                                token: {
+                                    colorBgContainer: isDarkTheme() ? "#212f4d" : "#dddfe1",
+                                    colorText: isDarkTheme() ? "#fff" : "#000",
+                                },
+                                algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                            }}
                         >
-                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                        </button>
-
-                        {/* Render page number buttons dynamically */}
-                        {Array.from({ length: totalPages }).map((_, i) => {
-                            const n = i + 1;
-                            return (
-                                <button
-                                    key={n}
-                                    onClick={() => goToPage(n)}
-                                    className={`flex size-9 items-center justify-center rounded-lg ${
-                                        n === page
-                                            ? "bg-primary text-white shadow-md shadow-primary/20"
-                                            : "border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-border-dark"
-                                    } text-sm font-medium`}
-                                >
-                                    {n}
-                                </button>
-                            );
-                        })}
-
-                        <button
-                            onClick={() => goToPage(page + 1)}
-                            disabled={page === totalPages}
-                            className="flex size-9 items-center justify-center rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-400 hover:bg-slate-50 dark:hover:bg-border-dark transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                        </button>
+                            <AntPagination current={page} pageSize={PAGE_SIZE} total={paginationInfo?.totalDocs ?? 0} onChange={goToPage} showSizeChanger={false} />
+                        </ConfigProvider>
                     </div>
                 </div>
                 {/* Modal */}
-                <ShowtimeFormModal open={modalOpen} initial={editing} onClose={closeModal} onSave={handleSave} movieOptions={Array.from(new Set(showtimes.map((m) => m.title)))} roomOptions={rooms} />
+                <ShowtimeFormModal
+                    open={modalOpen}
+                    initial={
+                        editing
+                            ? ({
+                                  id: editing._id,
+                                  movieId: editing.movie?._id ?? "",
+                                  cinemaId: editing.cinema?._id ?? "",
+                                  date: new Date(editing.startTime).toISOString().slice(0, 10),
+                                  startTime: (() => {
+                                      const d = new Date(editing.startTime);
+                                      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                                  })(),
+                                  endTime: (() => {
+                                      const d = new Date(editing.endTime ?? editing.startTime);
+                                      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                                  })(),
+                                  price: editing.price ?? 0,
+                              } as any)
+                            : undefined
+                    }
+                    onClose={closeModal}
+                    onSave={handleSave}
+                    movieOptions={Array.from(new Map(showtimes.map((m) => [m.movie?._id ?? m.movie, { id: m.movie?._id ?? "", title: m.movie?.title ?? "" }])).values()).filter((x) => x.id)}
+                    roomOptions={cinemas}
+                    saving={isSaving}
+                />
             </div>
         </div>
     );

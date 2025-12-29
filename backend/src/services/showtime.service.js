@@ -19,10 +19,10 @@ const getShowtimesByQuery = async (movie, date, cinema, page = 1, limit = 10) =>
 
   const [docs, totalDocs] = await Promise.all([
     Showtime.find(filter)
-      .select('startTime price totalSeats availableSeats movie cinema')
+      .select('startTime endTime price totalSeats availableSeats movie cinema')
       .populate('movie', 'title minutes posterImg status')
       .populate('cinema', 'name address')
-      .sort({ startTime: 1 })
+      .sort({ startTime: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
@@ -104,7 +104,7 @@ const getShowtimeById = async (id) => {
 };
 
 const createShowtime = async (showtimeData) => {
-  const { movie, cinema, startTime, price } = showtimeData
+  const { movie, cinema, startTime, endTime, price } = showtimeData
 
   const cinemaDoc = await Cinema.findById(cinema).select('seatLayout')
   if (!cinemaDoc) {
@@ -137,6 +137,7 @@ const createShowtime = async (showtimeData) => {
     movie,
     cinema,
     startTime,
+    endTime,
     totalSeats,
     availableSeats: totalSeats,
     seats

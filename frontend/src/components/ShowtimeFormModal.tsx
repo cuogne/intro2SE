@@ -1,51 +1,53 @@
 import React, { useEffect, useState } from "react";
 // Inlined type: Showtime
-type ShowtimeStatus = "upcoming" | "running" | "done";
 
-interface Showtime {
-    id: string;
-    code: string;
-    title: string;
-    duration: string;
-    genre: string;
-    startTime: string;
-    endTime: string;
-    date: string;
-    room: string;
-    status: ShowtimeStatus;
+// Modal input shape (used for both create and edit)
+interface ShowtimeInput {
+    id?: string;
+    movieId: string;
+    cinemaId: string;
+    date: string; // YYYY-MM-DD
+    startTime: string; // HH:mm
+    endTime: string; // HH:mm
+    price: number;
 }
 
 interface Props {
     open: boolean;
-    initial?: Showtime;
+    initial?: Partial<ShowtimeInput> & { id?: string };
     onClose: () => void;
-    onSave: (s: Showtime) => void;
-    movieOptions: string[];
-    roomOptions: string[];
+    // onSave receives the prepared payload (startTime/endTime are ISO strings)
+    onSave: (s: { id?: string; movieId: string; cinemaId: string; startTime: string; endTime?: string; price?: number }) => void;
+    movieOptions: { id: string; title: string }[];
+    roomOptions: { _id: string; name: string }[];
+    saving?: boolean;
 }
 
-const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, movieOptions, roomOptions }) => {
-    const [title, setTitle] = useState("");
+const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, movieOptions, roomOptions, saving = false }) => {
+    const [movieId, setMovieId] = useState<string>("");
     const [date, setDate] = useState("");
     const [startTime, setStartTime] = useState("19:00");
     const [endTime, setEndTime] = useState("21:00");
-    const [room, setRoom] = useState("");
+    const [cinemaId, setCinemaId] = useState<string>("");
+    const [price, setPrice] = useState<string>("45000");
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (initial) {
-            setTitle(initial.title);
-            setDate(initial.date);
-            setStartTime(initial.startTime);
-            setEndTime(initial.endTime);
-            setRoom(initial.room);
+            setMovieId(initial.movieId ?? movieOptions[0]?.id ?? "");
+            setDate(initial.date ?? "");
+            setStartTime(initial.startTime ?? "");
+            setEndTime(initial.endTime ?? "");
+            setCinemaId(initial.cinemaId ?? roomOptions[0]?._id ?? "");
+            setPrice(initial.price?.toString() ?? "45000");
             setError(null);
         } else {
-            setTitle(movieOptions[0] ?? "");
+            setMovieId(movieOptions[0]?.id ?? "");
             setDate("");
-            setStartTime("19:00");
-            setEndTime("21:00");
-            setRoom(roomOptions[0] ?? "");
+            setStartTime("");
+            setEndTime("");
+            setCinemaId(roomOptions[0]?._id ?? "");
+            setPrice("45000");
             setError(null);
         }
     }, [initial, movieOptions, roomOptions, open]);
@@ -53,10 +55,11 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
     if (!open) return null;
 
     function validate() {
-        if (!title) return "Chọn phim";
+        if (!movieId) return "Chọn phim";
         if (!date) return "Chọn ngày";
         if (!startTime || !endTime) return "Nhập thời gian bắt đầu và kết thúc";
-        if (!room) return "Chọn phòng chiếu";
+        if (!cinemaId) return "Chọn phòng chiếu";
+        if (!price || Number(price) <= 0) return "Nhập giá bán hợp lệ";
         return null;
     }
 
@@ -67,23 +70,25 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
             return;
         }
 
-        const id = initial?.id ?? Date.now().toString();
-        const code = initial?.code ?? `S${id.slice(-5)}`;
+        // Build ISO start/end times using date + times
+        const start = new Date(`${date}T${startTime}`);
+        let end = new Date(`${date}T${endTime}`);
 
-        const newShowtime: Showtime = {
-            id,
-            code,
-            title,
-            duration: initial?.duration ?? "0h 0m",
-            genre: initial?.genre ?? "",
-            startTime,
-            endTime,
-            date,
-            room,
-            status: initial?.status ?? "upcoming",
+        // If end is before or equal to start, roll it to the next day
+        if (end <= start) {
+            end.setDate(end.getDate() + 1);
+        }
+
+        const payload = {
+            id: initial?.id,
+            movieId,
+            cinemaId,
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            price: Number(price),
         };
 
-        onSave(newShowtime);
+        onSave(payload);
     }
 
     return (
@@ -101,13 +106,13 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
                     <label className="flex flex-col">
                         <span className="text-sm text-slate-700 dark:text-slate-300 mb-2">Phim</span>
                         <select
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            value={movieId}
+                            onChange={(e) => setMovieId(e.target.value)}
                             className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white h-11 px-3"
                         >
                             {movieOptions.map((m) => (
-                                <option key={m} value={m}>
-                                    {m}
+                                <option key={m.id} value={m.id}>
+                                    {m.title}
                                 </option>
                             ))}
                         </select>
@@ -143,20 +148,32 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
                         />
                     </label>
 
-                    <label className="flex flex-col md:col-span-2">
+                    <label className="flex flex-col">
                         <span className="text-sm text-slate-700 dark:text-slate-300 mb-2">Phòng chiếu</span>
+
                         <select
-                            value={room}
-                            onChange={(e) => setRoom(e.target.value)}
+                            value={cinemaId}
+                            onChange={(e) => setCinemaId(e.target.value)}
                             className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white h-11 px-3"
                         >
                             {roomOptions.map((r) => (
-                                <option key={r} value={r}>
-                                    {r}
+                                <option key={r._id} value={r._id}>
+                                    {r.name}
                                 </option>
                             ))}
                         </select>
                     </label>
+                    <div className="flex flex-col">
+                        <span className="text-sm text-slate-700 dark:text-slate-300 mb-2">Giá bán (VND)</span>
+                        <input
+                            type="number"
+                            min={0}
+                            step={1000}
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
+                            className="form-input w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white h-11 px-3"
+                        />
+                    </div>
                 </div>
 
                 {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
@@ -168,8 +185,15 @@ const ShowtimeFormModal: React.FC<Props> = ({ open, initial, onClose, onSave, mo
                     >
                         Hủy
                     </button>
-                    <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-primary text-white shadow-md active:scale-95">
-                        Lưu
+                    <button onClick={handleSave} disabled={saving} className={`px-4 py-2 rounded-lg bg-primary text-white shadow-md active:scale-95 ${saving ? "opacity-70 pointer-events-none" : ""}`}>
+                        {saving ? (
+                            <span className="inline-flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[18px] animate-spin">autorenew</span>
+                                Đang lưu
+                            </span>
+                        ) : (
+                            "Lưu"
+                        )}
                     </button>
                 </div>
             </div>
