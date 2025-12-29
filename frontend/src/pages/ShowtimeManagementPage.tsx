@@ -3,6 +3,7 @@ import "../index.css";
 import { Pagination as AntPagination, ConfigProvider, theme, notification, Spin } from "antd";
 import { fetchShowtimes, createShowtime, updateShowtime, deleteShowtime, type ShowtimeListItem, type Pagination as PagingInfo } from "../services/showtimeService";
 import { fetchCinemas, type Cinema } from "../services/cinemaService";
+import { fetchMovies } from "../services/movieService";
 import ShowtimeFormModal from "../components/ShowtimeFormModal";
 import { useTheme } from "../context/ThemeContext";
 
@@ -16,6 +17,7 @@ const ShowtimeManagementPage: React.FC = () => {
     const [filterDate, setFilterDate] = useState("");
     const [filterCinemaId, setFilterCinemaId] = useState("");
     const [cinemas, setCinemas] = useState<Cinema[]>([]);
+    const [movieOptions, setMovieOptions] = useState<{ id: string; title: string }[]>([]);
 
     const PAGE_SIZE = 10;
     const [paginationInfo, setPaginationInfo] = useState<PagingInfo | null>(null);
@@ -56,13 +58,42 @@ const ShowtimeManagementPage: React.FC = () => {
         const loadCinemas = async () => {
             try {
                 const data = await fetchCinemas();
-                setCinemas(data || []);
+                // Only include cinemas that are open
+                setCinemas((data || []).filter((c) => c.status === "open"));
             } catch (e) {
                 console.error("Lỗi tải danh sách rạp:", e);
                 setCinemas([]);
             }
         };
         loadCinemas();
+    }, []);
+
+    // Load all active movies for the modal selector
+    useEffect(() => {
+        const loadMovies = async () => {
+            setIsLoading(true);
+            try {
+                // fetch both statuses with a large limit
+                const now = await fetchMovies("Now Showing", 1, 1000);
+                const soon = await fetchMovies("Coming Soon", 1, 1000);
+                const merged = [...(now.movies || []), ...(soon.movies || [])];
+                // dedupe by id
+                const map = new Map<string, { id: string; title: string }>();
+                merged.forEach((m) => {
+                    if (m && m._id && m.status !== "ended") {
+                        map.set(m._id, { id: m._id, title: m.title });
+                    }
+                });
+                setMovieOptions(Array.from(map.values()));
+            } catch (e) {
+                console.error("Lỗi tải danh sách phim:", e);
+                notification.error({ message: "Lỗi tải danh sách phim" });
+                setMovieOptions([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadMovies();
     }, []);
 
     const [modalOpen, setModalOpen] = useState(false);
@@ -421,7 +452,7 @@ const ShowtimeManagementPage: React.FC = () => {
                     }
                     onClose={closeModal}
                     onSave={handleSave}
-                    movieOptions={Array.from(new Map(showtimes.map((m) => [m.movie?._id ?? m.movie, { id: m.movie?._id ?? "", title: m.movie?.title ?? "" }])).values()).filter((x) => x.id)}
+                    movieOptions={movieOptions}
                     roomOptions={cinemas}
                     saving={isSaving}
                 />
