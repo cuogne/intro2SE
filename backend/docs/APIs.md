@@ -71,6 +71,8 @@ headers: {
   _id: string;
   name: string;
   address: string;
+  rows: number;
+  columns: number;
   seatLayout: Array<{
     row: string;          // Ví dụ: "A", "B", "C"
     seats: string[];      // Ví dụ: ["A1", "A2", "A3"]
@@ -135,6 +137,7 @@ headers: {
 | DELETE | [`/api/v1/users/me`](#23-xóa-tài-khoản) | Xóa tài khoản của chính mình | Login |
 | GET | [`/api/v1/users/all`](#24-lấy-danh-sách-tất-cả-tài-khoản-admin-only) | Lấy danh sách tất cả tài khoản | Admin only |
 | GET | [`/api/v1/users/all/:id`](#25-lấy-thông-tin-tài-khoản-theo-id-admin-only) | Lấy thông tin tài khoản theo id | Admin only |
+| PUT | [`/api/v1/users/me/password`](#26-đổi-mật-khẩu) | Đổi mật khẩu | Login |
 
 ### Movie APIs
 | Method | Endpoint | Description | Auth Required |
@@ -341,7 +344,65 @@ Token này sẽ được lưu lại vào cookie của browser để sử dụng 
 
 ---
 
-#### 2.4. Lấy danh sách tất cả tài khoản (Admin only)
+#### 2.4. Đổi mật khẩu
+
+**Endpoint:** `PUT /api/v1/users/me/password`
+
+**Authentication:** Required (Login)
+
+**Mô tả:** API này dùng để đổi mật khẩu của chính user đang đăng nhập. User phải cung cấp mật khẩu hiện tại để xác thực trước khi đổi sang mật khẩu mới.
+
+**Request Body:**
+```json
+{
+  "currentPassword": "oldpassword123",
+  "newPassword": "newpassword456",
+  "confirmPassword": "newpassword456"
+}
+```
+
+**Validation:**
+- Tất cả các field (`currentPassword`, `newPassword`, `confirmPassword`) đều bắt buộc
+- `newPassword` và `confirmPassword` phải khớp nhau
+- `newPassword` phải có độ dài từ 6 đến 20 ký tự
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
+
+**Response (400 Bad Request) - Mật khẩu hiện tại sai:**
+```json
+{
+  "success": false,
+  "message": "Error changing password",
+  "error": "Current password is incorrect"
+}
+```
+
+**Response (400 Bad Request) - User không tồn tại:**
+```json
+{
+  "success": false,
+  "message": "Error changing password",
+  "error": "User not found"
+}
+```
+
+**Response (400 Bad Request) - Validation error:**
+```json
+{
+  "success": false,
+  "message": "New password and confirm password do not match"
+}
+```
+
+---
+
+#### 2.5. Lấy danh sách tất cả tài khoản (Admin only)
 
 **Endpoint:** `GET /api/v1/users/all`
 
@@ -386,7 +447,7 @@ Token này sẽ được lưu lại vào cookie của browser để sử dụng 
 
 ---
 
-#### 2.5. Lấy thông tin tài khoản theo id (Admin only)
+#### 2.6. Lấy thông tin tài khoản theo id (Admin only)
 
 **Endpoint:** `GET /api/v1/users/all/:id`
 

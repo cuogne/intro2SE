@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:8888/api
+@baseUrl = http://localhost:4001/api
 
 ### Login
 # @name loginRequest
@@ -21,3 +21,15 @@ Content-Type: application/json
 GET {{baseUrl}}/v1/users/all
 Authorization: Bearer {{loginRequest.response.body.data.token}}
 Content-Type: application/json
+
+### change password
+# @name changePassword
+PUT {{baseUrl}}/v1/users/me/password
+Authorization: Bearer {{loginRequest.response.body.data.token}}
+Content-Type: application/json
+
+{
+    "currentPassword": "123456",
+    "newPassword": "654321",
+    "confirmPassword": "654321"
+}

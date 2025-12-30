@@ -49,9 +49,9 @@ const validateRegister = (req, res, next) => {
 }
 
 const validateLogin = (req, res, next) => {
-    const {username, password} = req.body
+    const { username, password } = req.body
 
-    if (!username || !password){
+    if (!username || !password) {
         return res.status(400).json({
             success: false,
             message: 'Username and password are required'
@@ -130,8 +130,37 @@ const validateUpdateAccount = (req, res, next) => {
     next()
 }
 
+const validateUpdatePassword = (req, res, next) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({
+            success: false,
+            message: 'currentPassword, newPassword and confirmPassword are required'
+        })
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({
+            success: false,
+            message: 'New password and confirm password do not match'
+        })
+    }
+
+    const newPasswordTrim = newPassword.trim()
+    if (newPasswordTrim.length < 6 || newPasswordTrim.length > 20) {
+        return res.status(400).json({
+            success: false,
+            message: 'New password must be between 6 and 20 characters'
+        })
+    }
+
+    next()
+}
+
 module.exports = {
     validateRegister,
     validateLogin,
-    validateUpdateAccount
+    validateUpdateAccount,
+    validateUpdatePassword
 }
