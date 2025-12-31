@@ -11,6 +11,7 @@ import MoviesPage from "./pages/MoviesPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import ShowtimeManagementPage from "./pages/ShowtimeManagementPage";
 import MovieManagementPage from "./pages/MovieManagementPage";
+import AdminStaffsPage from "./pages/AdminStaffsPage";
 
 function App() {
     return (
@@ -35,6 +36,7 @@ function App() {
                             <Route path="ticket-types" element={<TicketTypeManagementPage />} />
                             <Route path="showtimes" element={<ShowtimeManagementPage />} />
                             <Route path="movies" element={<MovieManagementPage />} />
+                            <Route path="staff" element={<AdminStaffsPage />} />
                             <Route path="logout" element={<AdminLogoutPage />} />
                         </Route>
                     </Routes>
