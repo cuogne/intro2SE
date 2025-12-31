@@ -163,12 +163,12 @@ export default function AdminStaffsPage() {
             </div>
             <div className="flex-1 overflow-y-auto">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-6">
-                    <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-white dark:bg-[#192233] p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-white dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-slate-200 dark:border-border-dark">
                         <div className="flex flex-1 w-full lg:w-auto gap-3 flex-col sm:flex-row">
                             <div className="relative flex-1 min-w-[280px]">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">search</span>
                                 <input
-                                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-[#324467] text-slate-900 dark:text-white rounded-lg h-11 pl-10 pr-4 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm transition-all"
+                                    className="w-full bg-slate-50 dark:bg-[#111318] border border-slate-200 dark:border-border-dark text-slate-900 dark:text-white rounded-lg h-11 pl-10 pr-4 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm transition-all"
                                     placeholder="Tìm kiếm theo tên, email hoặc mã NV..."
                                     type="text"
                                     value={search}
@@ -182,7 +182,7 @@ export default function AdminStaffsPage() {
                             <div className="relative w-full sm:w-[180px]">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">filter_list</span>
                                 <select
-                                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-[#324467] text-slate-900 dark:text-white rounded-lg h-11 pl-10 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm cursor-pointer transition-all"
+                                    className="w-full bg-slate-50 dark:bg-[#111318] border border-slate-200 dark:border-border-dark text-slate-900 dark:text-white rounded-lg h-11 pl-10 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm cursor-pointer transition-all"
                                     value={roleFilter}
                                     onChange={(e) => {
                                         setRoleFilter(e.target.value);
@@ -202,10 +202,10 @@ export default function AdminStaffsPage() {
                         </div>
                     </div>
 
-                    <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-[#324467] bg-white dark:bg-[#192233] shadow-sm">
+                    <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white dark:bg-surface-dark dark:border-border-dark shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-slate-50 dark:bg-[#232f48] border-b border-slate-200 dark:border-[#324467]">
+                                <thead className="bg-slate-50 dark:bg-[#111318] border-b border-slate-200 dark:border-border-dark">
                                     <tr>
                                         <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#92a4c9]">Nhân viên</th>
                                         <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#92a4c9]">Mã NV</th>
@@ -215,9 +215,9 @@ export default function AdminStaffsPage() {
                                         <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#92a4c9] text-right">Hành động</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-[#324467]">
+                                <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
                                     {pageStaffs.map((staff) => (
-                                        <tr key={staff.id} className="group hover:bg-slate-50 dark:hover:bg-[#1f293a] transition-colors">
+                                        <tr key={staff.id} className="group hover:bg-slate-50 dark:hover:bg-border-dark/50 transition-colors">
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-3">
                                                     <div
@@ -273,7 +273,7 @@ export default function AdminStaffsPage() {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => openEditModal(staff)}
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-[#232f48] transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-border-dark/50 transition-colors"
                                                         title="Chỉnh sửa"
                                                     >
                                                         <span className="material-symbols-outlined text-[20px]">edit</span>
@@ -284,7 +284,7 @@ export default function AdminStaffsPage() {
                                                             className="p-2 rounded-lg text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                                                             title="Mở khóa tài khoản"
                                                         >
-                                                            <span className="material-symbols-outlined text-[20px]">lock_open</span>
+                                                            <span className="material-symbols-outlined text-[20px]">lock</span>
                                                         </button>
                                                     ) : (
                                                         <button
@@ -292,7 +292,7 @@ export default function AdminStaffsPage() {
                                                             className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                             title="Khóa tài khoản"
                                                         >
-                                                            <span className="material-symbols-outlined text-[20px]">lock</span>
+                                                            <span className="material-symbols-outlined text-[20px]">lock_open</span>
                                                         </button>
                                                     )}
                                                 </div>
@@ -303,7 +303,7 @@ export default function AdminStaffsPage() {
                             </table>
                         </div>
 
-                        <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-[#1f293a] border-t border-slate-200 dark:border-[#324467]">
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318]">
                             <div className="text-sm text-slate-500 dark:text-[#92a4c9]">
                                 Hiển thị{" "}
                                 <span className="font-medium text-slate-900 dark:text-white">
@@ -313,7 +313,7 @@ export default function AdminStaffsPage() {
                             </div>
                             <div className="flex gap-2">
                                 <button
-                                    className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-[#324467] bg-white dark:bg-[#192233] text-sm font-medium text-slate-500 dark:text-[#92a4c9] hover:bg-slate-50 dark:hover:bg-[#232f48] disabled:opacity-50 transition-colors"
+                                    className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-500 dark:text-[#92a4c9] hover:bg-slate-50 dark:hover:bg-border-dark/50 disabled:opacity-50 transition-colors"
                                     disabled={currentPage <= 0}
                                     onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
                                 >
@@ -327,7 +327,7 @@ export default function AdminStaffsPage() {
                                             className={`px-3 py-1.5 rounded-md ${
                                                 i === currentPage
                                                     ? "bg-primary text-white hover:bg-blue-600"
-                                                    : "border border-slate-300 dark:border-[#324467] bg-white dark:bg-[#192233] text-sm font-medium text-slate-500 dark:text-[#92a4c9] hover:bg-slate-50 dark:hover:bg-[#232f48]"
+                                                    : "border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-500 dark:text-[#92a4c9] hover:bg-slate-50 dark:hover:bg-border-dark/50"
                                             }`}
                                             onClick={() => setCurrentPage(i)}
                                         >
@@ -336,7 +336,7 @@ export default function AdminStaffsPage() {
                                     ))}
                                 {totalPages > 5 && <span className="px-2 text-slate-400 dark:text-slate-600">...</span>}
                                 <button
-                                    className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-[#324467] bg-white dark:bg-[#192233] text-sm font-medium text-slate-500 dark:text-[#92a4c9] hover:bg-slate-50 dark:hover:bg-[#232f48] transition-colors"
+                                    className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-slate-500 dark:text-[#92a4c9] hover:bg-slate-50 dark:hover:bg-border-dark/50 transition-colors"
                                     disabled={currentPage >= totalPages - 1}
                                     onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
                                 >

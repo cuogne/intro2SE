@@ -28,9 +28,9 @@ function padCol(n: number) {
 export default function RoomEditor({ open, initial = null, onClose, onSave }: Props) {
     const [name, setName] = useState(initial?.name ?? "");
     const [address, setAddress] = useState(initial?.address ?? "");
-    const [cols, setCols] = useState<number>(initial?.seatsCols ?? initial?.seatLayout?.[0]?.seats.length ?? 10);
+    const [cols, setCols] = useState<number>(initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? 10);
     const [seatStates, setSeatStates] = useState<Record<string, SeatState>>({});
-    const [rowsCount, setRowsCount] = useState<number>(initial?.seatRows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS);
+    const [rowsCount, setRowsCount] = useState<number>(initial?.rows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS);
     const [status, setStatus] = useState<string>(initial?.status ?? "open");
     const [type, setType] = useState<string>(initial?.type ?? "custom");
 
@@ -38,8 +38,8 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
         setName(initial?.name ?? "");
         setAddress(initial?.address ?? "");
 
-        const initialRows = initial?.seatRows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS;
-        const initialCols = initial?.seatsCols ?? initial?.seatLayout?.[0]?.seats.length ?? 12;
+        const initialRows = initial?.rows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS;
+        const initialCols = initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? 12;
 
         setCols(initialCols);
         setRowsCount(initialRows);
@@ -98,8 +98,8 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
             status,
             type,
             seatLayout: rows,
-            seatRows: clampedRows,
-            seatsCols: clampedCols,
+            rows: clampedRows,
+            columns: clampedCols,
             capacity,
         });
         onClose();

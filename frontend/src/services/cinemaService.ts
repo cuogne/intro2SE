@@ -13,8 +13,8 @@ export interface Cinema {
     status?: string; //open, closed, renovating
     type?: string; //2dstandard, 3dvip, imax
     capacity?: number;
-    seatRows?: number;
-    seatsCols?: number;
+    rows?: number;
+    columns?: number;
     seatLayout?: SeatLayoutRow[];
 }
 
@@ -27,8 +27,8 @@ const MOCK_CINEMAS: Cinema[] = [
         status: "open",
         type: "2dstandard",
         capacity: 100,
-        seatRows: 7,
-        seatsCols: 10,
+        rows: 7,
+        columns: 10,
         seatLayout: [
             { _id: "6944be92946fe3fc1e3fab09", row: "A", seats: ["A1", "A2", "A3", "A4", "A5"] },
             { _id: "6944be92946fe3fc1e3fab0a", row: "B", seats: ["B1", "B2", "B3", "B4", "B5"] },
@@ -44,8 +44,8 @@ const MOCK_CINEMAS: Cinema[] = [
         status: "open",
         type: "2dstandard",
         capacity: 100,
-        seatRows: 7,
-        seatsCols: 10,
+        rows: 7,
+        columns: 10,
         seatLayout: [
             { _id: "6944be99946fe3fc1e3fab11", row: "A", seats: ["A1", "A2", "A3", "A4", "A5", "A6"] },
             { _id: "6944be99946fe3fc1e3fab12", row: "B", seats: ["B1", "B2", "B3", "B4", "B5", "B6"] },
