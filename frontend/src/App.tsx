@@ -1,7 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 // ...existing code...
-import RoomManagementPage from "./pages/RoomManagementPage";
-import TicketTypeManagementPage from "./pages/TicketTypeManagementPage";
 import AdminLayout from "./components/layouts/AdminLayout";
 import AdminRoute from "./components/AdminRoute";
 import AdminLogoutPage from "./pages/AdminLogoutPage";
@@ -9,9 +7,11 @@ import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import MoviesPage from "./pages/MoviesPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
-import ShowtimeManagementPage from "./pages/ShowtimeManagementPage";
-import MovieManagementPage from "./pages/MovieManagementPage";
+import AdminShowtimePage from "./pages/AdminShowtimePage";
 import AdminStaffsPage from "./pages/AdminStaffsPage";
+import AdminMoviePage from "./pages/AdminMoviePage";
+import AdminTicketType from "./pages/AdminTicketType";
+import AdminCinemaPage from "./pages/AdminCinemaPage";
 
 function App() {
     return (
@@ -32,10 +32,10 @@ function App() {
                             }
                         >
                             <Route index element={<Navigate to="ticket-types" replace />} />
-                            <Route path="cinema-rooms" element={<RoomManagementPage />} />
-                            <Route path="ticket-types" element={<TicketTypeManagementPage />} />
-                            <Route path="showtimes" element={<ShowtimeManagementPage />} />
-                            <Route path="movies" element={<MovieManagementPage />} />
+                            <Route path="cinema-rooms" element={<AdminCinemaPage />} />
+                            <Route path="ticket-types" element={<AdminTicketType />} />
+                            <Route path="showtimes" element={<AdminShowtimePage />} />
+                            <Route path="movies" element={<AdminMoviePage />} />
                             <Route path="staff" element={<AdminStaffsPage />} />
                             <Route path="logout" element={<AdminLogoutPage />} />
                         </Route>

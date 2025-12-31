@@ -23,7 +23,7 @@ const INITIAL_TYPES: TicketType[] = [
     { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
 ];
 
-export default function TicketTypeManagementPage() {
+export default function AdminTicketType() {
     const [types, setTypes] = useState<TicketType[]>(INITIAL_TYPES);
     const [isOpen, setIsOpen] = useState(false);
     const [current, setCurrent] = useState<TicketType | null>(null);

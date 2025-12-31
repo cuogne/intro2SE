@@ -7,7 +7,7 @@ import { fetchMovies, createMovie, updateMovie, deleteMovie } from "../services/
 
 // Movies are loaded from the API via `movieService.fetchMovies`
 
-export default function MovieManagementPage() {
+export default function AdminMoviePage() {
     const [movies, setMovies] = useState<Movie[]>([]);
     const [isAddOpen, setAddOpen] = useState(false); // show modal only when user clicks "Thêm phim mới"
     const [currentMovie, setCurrentMovie] = useState<Movie | null>(null);

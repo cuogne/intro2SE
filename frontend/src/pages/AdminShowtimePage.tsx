@@ -9,7 +9,7 @@ import { useTheme } from "../context/ThemeContext";
 
 type ShowtimeStatus = "upcoming" | "running" | "done";
 
-const ShowtimeManagementPage: React.FC = () => {
+const AdminShowtimePage: React.FC = () => {
     const { isDarkTheme } = useTheme();
     const [showtimes, setShowtimes] = useState<ShowtimeListItem[]>([]);
 
@@ -461,4 +461,4 @@ const ShowtimeManagementPage: React.FC = () => {
     );
 };
 
-export default ShowtimeManagementPage;
+export default AdminShowtimePage;

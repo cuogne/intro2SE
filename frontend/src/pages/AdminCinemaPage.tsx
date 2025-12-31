@@ -24,7 +24,7 @@ const mapStatus = (status?: string) => {
     return status;
 };
 
-export default function RoomManagementPage() {
+export default function AdminCinemaPage() {
     const [cinemas, setCinemas] = useState<Cinema[]>([]);
     const [query, setQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
