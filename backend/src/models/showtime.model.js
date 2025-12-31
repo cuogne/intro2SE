@@ -5,6 +5,7 @@ const showtimeSchema = new mongoose.Schema({
   cinema: { type: mongoose.Schema.Types.ObjectId, ref: 'Cinema', required: true },
   
   startTime: { type: Date, required: true, index: true },
+  endTime: { type: Date, required: true },
 
   price: {type: Number, default: 45000},
 

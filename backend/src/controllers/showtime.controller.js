@@ -52,12 +52,12 @@ const getShowtimeById = async (req, res) => {
 const createShowtime = async (req, res) => {
     try {
         // Map API field names to model field names
-        const { movieId, cinemaId, startTime, price } = req.body;
+        const { movieId, cinemaId, startTime, endTime, price } = req.body;
 
-        if (!movieId || !cinemaId || !startTime) {
+        if (!movieId || !cinemaId || !startTime || !endTime) {
             return res.status(400).json({
                 success: false,
-                message: 'movieId, cinemaId, and startTime are required'
+                message: 'movieId, cinemaId, startTime, and endTime are required'
             });
         }
 
@@ -65,6 +65,7 @@ const createShowtime = async (req, res) => {
             movie: movieId,
             cinema: cinemaId,
             startTime,
+            endTime,
             ...(price && { price }) // Only include price if provided
         };
 

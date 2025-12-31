@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #135bec;
+  --color-background-light: #f6f6f8;
+  --color-background-dark: #101622;
+  --color-surface-dark: #1c1f27;
+  --color-border-dark: #282e39;
+  --color-text-secondary: #9da6b9;
+}
+
+/* Consistent thin rounded scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(104, 104, 104, 0.6); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+* { scrollbar-width: medium; scrollbar-color: rgba(51, 51, 51, 0.6) transparent; }

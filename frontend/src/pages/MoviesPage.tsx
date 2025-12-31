@@ -1,154 +1,133 @@
-import React, { useEffect, useState } from 'react';
-import MovieCard from '../components/MovieCard';
-import { fetchMovies } from '../services/movieService';
-import type { Movie } from '../services/movieService';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import MovieCard from "../components/MovieCard";
+import { fetchMovies } from "../services/movieService";
+import type { Movie } from "../services/movieService";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 const ITEMS_PER_PAGE = 8;
 
 const MoviesPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'Now Showing' | 'Coming Soon'>('Now Showing');
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  
-  // 1. Thêm State cho từ khóa tìm kiếm
-  const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState<"Now Showing" | "Coming Soon">("Now Showing");
+    const [movies, setMovies] = useState<Movie[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(false);
 
-  // Load data khi đổi Tab
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const data = await fetchMovies(activeTab);
-      setMovies(data);
-      setCurrentPage(1);
-      // Reset tìm kiếm khi đổi tab (tuỳ chọn)
-      setSearchTerm(''); 
-      setLoading(false);
-    };
-    loadData();
-  }, [activeTab]);
+    // 1. Thêm State cho từ khóa tìm kiếm
+    const [searchTerm, setSearchTerm] = useState("");
 
-  // 2. Logic Lọc phim (Search Logic)
-  // Lọc phim trước, sau đó mới Phân trang
-  const filteredMovies = movies.filter(movie => 
-    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    // Load data khi đổi Tab
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            const res = await fetchMovies(activeTab);
+            setMovies(res.movies);
+            setCurrentPage(1);
+            // Reset tìm kiếm khi đổi tab (tuỳ chọn)
+            setSearchTerm("");
+            setLoading(false);
+        };
+        loadData();
+    }, [activeTab]);
 
-  // 3. Logic Phân trang (Dựa trên danh sách đã lọc)
-  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE);
-  const currentMovies = filteredMovies.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+    // 2. Logic Lọc phim (Search Logic)
+    // Lọc phim trước, sau đó mới Phân trang
+    const filteredMovies = movies.filter((movie) => movie.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // Reset về trang 1 nếu người dùng nhập tìm kiếm
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+    // 3. Logic Phân trang (Dựa trên danh sách đã lọc)
+    const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE);
+    const currentMovies = filteredMovies.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      
-      {/* --- KHU VỰC HEADER CỦA TRANG (Tab + Tìm kiếm) --- */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        
-        {/* Tab Switcher */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab('Now Showing')}
-            className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
-              activeTab === 'Now Showing' 
-                ? 'bg-black text-white' 
-                : 'bg-white text-black hover:bg-gray-100'
-            }`}
-          >
-            Phim đang chiếu
-          </button>
-          <button
-            onClick={() => setActiveTab('Coming Soon')}
-            className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
-              activeTab === 'Coming Soon' 
-                ? 'bg-black text-white' 
-                : 'bg-white text-black hover:bg-gray-100'
-            }`}
-          >
-            Phim sắp chiếu
-          </button>
-        </div>
+    // Reset về trang 1 nếu người dùng nhập tìm kiếm
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
-        {/* Ô Tìm Kiếm Mới */}
-        <div className="relative w-full md:w-96">
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm phim..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-black rounded px-4 py-2 pl-10 focus:outline-none focus:ring-1 focus:ring-black"
-          />
-          <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
-        </div>
-      </div>
+    return (
+        <div className="container mx-auto px-4 py-8">
+            {/* --- KHU VỰC HEADER CỦA TRANG (Tab + Tìm kiếm) --- */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                {/* Tab Switcher */}
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => setActiveTab("Now Showing")}
+                        className={`px-6 py-2 rounded font-bold border border-black transition-colors ${activeTab === "Now Showing" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
+                    >
+                        Phim đang chiếu
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("Coming Soon")}
+                        className={`px-6 py-2 rounded font-bold border border-black transition-colors ${activeTab === "Coming Soon" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
+                    >
+                        Phim sắp chiếu
+                    </button>
+                </div>
 
-      {/* Grid Movies */}
-      {loading ? (
-        <div className="text-center py-20">Đang tải dữ liệu...</div>
-      ) : (
-        <>
-          {/* Thông báo nếu không tìm thấy phim */}
-          {filteredMovies.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              Không tìm thấy phim nào phù hợp với từ khóa "{searchTerm}".
+                {/* Ô Tìm Kiếm Mới */}
+                <div className="relative w-full md:w-96">
+                    <input
+                        type="text"
+                        placeholder="Tìm kiếm phim..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full border border-black rounded px-4 py-2 pl-10 focus:outline-none focus:ring-1 focus:ring-black"
+                    />
+                    <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
+                </div>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-12">
-            {currentMovies.map((movie) => (
-              <MovieCard key={movie._id} movie={movie} />
-            ))}
-          </div>
+            {/* Grid Movies */}
+            {loading ? (
+                <div className="text-center py-20">Đang tải dữ liệu...</div>
+            ) : (
+                <>
+                    {/* Thông báo nếu không tìm thấy phim */}
+                    {filteredMovies.length === 0 && <div className="text-center py-12 text-gray-500">Không tìm thấy phim nào phù hợp với từ khóa "{searchTerm}".</div>}
 
-          {/* Pagination Controls */}
-          {totalPages > 0 && (
-            <div className="flex justify-center items-center gap-2">
-              <button 
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-                className="flex items-center px-4 py-2 border border-black rounded disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-              </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-12">
+                        {currentMovies.map((movie) => (
+                            <MovieCard key={movie._id} movie={movie} />
+                        ))}
+                    </div>
 
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pageNum = idx + 1;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-10 h-10 border border-black rounded font-bold transition-colors ${
-                        currentPage === pageNum 
-                        ? 'bg-black text-white' 
-                        : 'bg-white text-black hover:bg-gray-100'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+                    {/* Pagination Controls */}
+                    {totalPages > 0 && (
+                        <div className="flex justify-center items-center gap-2">
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage((p) => p - 1)}
+                                className="flex items-center px-4 py-2 border border-black rounded disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+                            >
+                                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                            </button>
 
-              <button 
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-                className="flex items-center px-4 py-2 border border-black rounded disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
-              >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+                            {Array.from({ length: totalPages }).map((_, idx) => {
+                                const pageNum = idx + 1;
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`w-10 h-10 border border-black rounded font-bold transition-colors ${
+                                            currentPage === pageNum ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+
+                            <button
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage((p) => p + 1)}
+                                className="flex items-center px-4 py-2 border border-black rounded disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+                            >
+                                Next <ChevronRight className="w-4 h-4 ml-1" />
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
 };
 
 export default MoviesPage;
