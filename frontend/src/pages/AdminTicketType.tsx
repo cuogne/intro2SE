@@ -14,13 +14,6 @@ const INITIAL_TYPES: TicketType[] = [
     { id: "T02", name: "Vé VIP", price: 120000, description: "Ghế VIP có khoảng để chân rộng", active: true },
     { id: "T03", name: "Vé trẻ em", price: 40000, description: "Dành cho trẻ em dưới 12 tuổi", active: true },
     { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
-    { id: "T04", name: "Vé sinh viên", price: 50000, description: "Tặng kèm khi xuất trình thẻ SV", active: false },
 ];
 
 export default function AdminTicketType() {
