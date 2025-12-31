@@ -79,6 +79,17 @@ export default function AdminHeader({ onLogout = noopVoid}: AdminHeaderProps) {
                     >
                         Nhân Viên
                     </NavLink>
+
+                    <NavLink
+                        to="/admin/users"
+                        className={({ isActive }) =>
+                            isActive
+                                ? "text-primary text-sm font-bold leading-normal border-b-2 border-primary py-4 -my-4"
+                                : "text-slate-500 dark:text-text-secondary hover:text-primary text-sm font-medium leading-normal transition-colors"
+                        }
+                    >
+                        Người Dùng
+                    </NavLink>
                 </nav>
 
                 <div className="flex items-center gap-4">

@@ -12,6 +12,7 @@ import AdminStaffsPage from "./pages/AdminStaffsPage";
 import AdminMoviePage from "./pages/AdminMoviePage";
 import AdminTicketType from "./pages/AdminTicketType";
 import AdminCinemaPage from "./pages/AdminCinemaPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 
 function App() {
     return (
@@ -37,6 +38,7 @@ function App() {
                             <Route path="showtimes" element={<AdminShowtimePage />} />
                             <Route path="movies" element={<AdminMoviePage />} />
                             <Route path="staff" element={<AdminStaffsPage />} />
+                            <Route path="users" element={<AdminUsersPage />} />
                             <Route path="logout" element={<AdminLogoutPage />} />
                         </Route>
                     </Routes>
