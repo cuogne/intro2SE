@@ -41,12 +41,11 @@ const getBookingById = async (req, res) => {
   }
 };
 
-// POST /api/v1/bookings/reserve
+// POST /api/v1/bookings
 // Body: { showtimeId: string, seats: [{ row: string, number: number }] }
-// Giữ ghế 5 phút (tạo booking pending với holdExpiresAt)
 const reserveSeats = async (req, res) => {
   try {
-    const userId = req.user.id; // id user login trong token
+    const userId = req.user.id;
     const { showtimeId, seats } = req.body;
 
     if (!showtimeId || !Array.isArray(seats) || seats.length === 0) {
@@ -64,7 +63,10 @@ const reserveSeats = async (req, res) => {
         bookingId: result.booking._id,
         holdExpiresAt: result.holdExpiresAt,
         expiresInSeconds: result.expiresInSeconds,
-        message: 'Seats reserved for 5 minutes'
+        isNewBooking: result.isNewBooking,
+        message: result.isNewBooking
+          ? 'Seats reserved for 5 minutes'
+          : 'Seats added to existing reservation'
       },
     });
   } catch (error) {
@@ -76,30 +78,62 @@ const reserveSeats = async (req, res) => {
   }
 };
 
-// POST /api/v1/bookings
-// Body: { showtimeId: string, seats: [{ row: string, number: number }] }
-const addBooking = async (req, res) => {
+// PATCH /api/v1/bookings/:id/seats
+// Body: { action: 'add' | 'remove', seats: [{ row: string, number: number }] }
+const updateBookingSeats = async (req, res) => {
   try {
-    const userId = req.user.id; // id user login trong token
-    const { showtimeId, seats } = req.body;
+    const userId = req.user.id;
+    const { id: bookingId } = req.params;
+    const { action, seats } = req.body;
 
-    if (!showtimeId || !Array.isArray(seats) || seats.length === 0) {
+    if (!action || !seats || !Array.isArray(seats) || seats.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'showtimeId and seats are required',
+        message: 'action (add/remove) and seats (array) are required',
       });
     }
 
-    const booking = await bookingService.addBooking(userId, showtimeId, seats);
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'bookingId is required in path params',
+      });
+    }
 
-    return res.status(201).json({
+    if (action !== 'add' && action !== 'remove') {
+      return res.status(400).json({
+        success: false,
+        message: 'action must be "add" or "remove"',
+      });
+    }
+
+    const result = await bookingService.updateBookingSeats(userId, bookingId, action, seats);
+
+    if (result.deleted) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          deleted: true,
+          message: 'Reservation cancelled (no seats remaining)'
+        },
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      data: booking,
+      data: {
+        bookingId: result.booking._id,
+        holdExpiresAt: result.holdExpiresAt,
+        expiresInSeconds: result.expiresInSeconds,
+        message: action === 'add'
+          ? 'Seats added to reservation'
+          : 'Seats removed from reservation'
+      },
     });
   } catch (error) {
     return res.status(400).json({
       success: false,
-      message: 'Error creating booking',
+      message: 'Error updating booking seats',
       error: error.message,
     });
   }
@@ -108,6 +142,6 @@ const addBooking = async (req, res) => {
 module.exports = {
   getBookingById,
   getBookingByUser,
-  addBooking,
   reserveSeats,
+  updateBookingSeats,
 };

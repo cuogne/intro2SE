@@ -1,4 +1,5 @@
 const Cinema = require('../models/cinema.model');
+const { generateSeatLayout } = require('../utils/createSeatLayout');
 
 const getAllCinemas = async () => {
   return await Cinema.find({});
@@ -9,7 +10,24 @@ const getCinemaById = async (id) => {
 };
 
 const createCinema = async (cinemaData) => {
-  const cinema = new Cinema(cinemaData);
+  const { rows, columns, ...restData } = cinemaData;
+
+  if (rows && columns && (!cinemaData.seatLayout || cinemaData.seatLayout.length === 0)) {
+    if (typeof rows !== 'number' || rows <= 0 || !Number.isInteger(rows)) {
+      throw new Error('rows must be a positive integer');
+    }
+    if (typeof columns !== 'number' || columns <= 0 || !Number.isInteger(columns)) {
+      throw new Error('columns must be a positive integer');
+    }
+    restData.seatLayout = generateSeatLayout(rows, columns);
+  }
+
+  const cinema = new Cinema({
+    ...restData,
+    rows,
+    columns
+  });
+
   return await cinema.save();
 };
 
