@@ -62,8 +62,11 @@ cái `payUrl` là link để redirect người dùng tới trang thanh toán c�
 Vì hiện tại cái QR để quét thanh toán Momo t không dùng Momo UAT quét được nên tụi bây có test thì dùng nhập thẻ Visa/Master để test.
 
 NAME: NGUYEN VAN A	
+
 STK: 5200 0000 0000 1096	
+
 CARD EXPDATE: 05/26	
+
 CVC: 111
 
 Thì ở đây cũng có 2 cái trong .env là `MOMO_REDIRECT_URL` (frontend redirect url) và `MOMO_CALLBACK_URL` (backend callback url) tương tự ZaloPay vậy. Cũng phải dùng ngrok để chạy cái callback url này.
