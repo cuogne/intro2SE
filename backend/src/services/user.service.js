@@ -88,10 +88,53 @@ const changePassword = async (userId, currentPassword, newPassword) => {
     await user.save();
 };
 
+const updateUserByAdmin = async (userId, updateData) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    // Admin có thể cập nhật role
+    if (updateData.role !== undefined) {
+        const validRoles = ['user', 'admin'];
+        if (!validRoles.includes(updateData.role)) {
+            throw new Error('Invalid role');
+        }
+        user.role = updateData.role;
+    }
+
+    // Admin có thể cập nhật email
+    if (updateData.email !== undefined) {
+        const trimmedEmail = updateData.email.trim();
+        if (trimmedEmail && trimmedEmail !== user.email) {
+            const existingEmail = await User.findOne({
+                email: trimmedEmail,
+                _id: { $ne: userId }
+            });
+
+            if (existingEmail) {
+                throw new Error('Email already exists');
+            }
+            user.email = trimmedEmail;
+        }
+    }
+
+    user.updatedAt = new Date();
+    await user.save();
+
+    return user.toObject({
+        getters: true, versionKey: false, transform: (doc, ret) => {
+            delete ret.password;
+            return ret;
+        }
+    });
+};
+
 module.exports = {
     getAllAccounts,
     getAccountById,
     deleteAccount,
     updateAccount,
-    changePassword
+    changePassword,
+    updateUserByAdmin
 }

@@ -118,11 +118,34 @@ const changePassword = async (req, res) => {
     }
 }
 
+const updateUserByAdmin = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { role, email } = req.body
+
+        const updatedUser = await userService.updateUserByAdmin(id, { role, email })
+
+        res.status(200).json({
+            success: true,
+            message: 'User updated successfully',
+            data: updatedUser
+        })
+    }
+    catch (error) {
+        res.status(400).json({
+            success: false,
+            message: 'Error updating user',
+            error: error.message
+        })
+    }
+}
+
 module.exports = {
     getMyAccount,
     getAllAccounts,
     getAccountById,
     deleteAccount,
     updateAccount,
-    changePassword
+    changePassword,
+    updateUserByAdmin
 }
