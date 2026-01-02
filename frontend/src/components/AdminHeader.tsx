@@ -90,6 +90,17 @@ export default function AdminHeader({ onLogout = noopVoid}: AdminHeaderProps) {
                     >
                         Người Dùng
                     </NavLink>
+
+                    <NavLink
+                        to="/admin/payments"
+                        className={({ isActive }) =>
+                            isActive
+                                ? "text-primary text-sm font-bold leading-normal border-b-2 border-primary py-4 -my-4"
+                                : "text-slate-500 dark:text-text-secondary hover:text-primary text-sm font-medium leading-normal transition-colors"
+                        }
+                    >
+                        Giao Dịch
+                    </NavLink>
                 </nav>
 
                 <div className="flex items-center gap-4">
