@@ -224,7 +224,10 @@ export default function AdminCinemaPage() {
                                                             : "theaters"}
                                                     </span>
                                                 </div>
-                                                <span className="text-sm font-medium text-slate-900 dark:text-white">{r.name}</span>
+                                                <div className="flex flex-col">
+                                                    <div className="font-medium text-slate-900 dark:text-white">{r.name}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-text-secondary mt-0.5">ID: #{r._id}</div>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="p-4 text-sm text-slate-600 dark:text-slate-300">
