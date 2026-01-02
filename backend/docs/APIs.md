@@ -135,9 +135,9 @@ headers: {
 | GET | [`/api/v1/users/me`](#21-lấy-thông-tin-tài-khoản-của-mình) | Lấy thông tin tài khoản của chính mình | Login |
 | PUT | [`/api/v1/users/me/update`](#22-cập-nhật-thông-tin-tài-khoản) | Cập nhật thông tin tài khoản (username, email) | Login |
 | DELETE | [`/api/v1/users/me`](#23-xóa-tài-khoản) | Xóa tài khoản của chính mình | Login |
-| GET | [`/api/v1/users/all`](#24-lấy-danh-sách-tất-cả-tài-khoản-admin-only) | Lấy danh sách tất cả tài khoản | Admin only |
-| GET | [`/api/v1/users/all/:id`](#25-lấy-thông-tin-tài-khoản-theo-id-admin-only) | Lấy thông tin tài khoản theo id | Admin only |
-| PUT | [`/api/v1/users/me/password`](#26-đổi-mật-khẩu) | Đổi mật khẩu | Login |
+| PUT | [`/api/v1/users/me/password`](#24-đổi-mật-khẩu) | Đổi mật khẩu | Login |
+| GET | [`/api/v1/users/all`](#25-lấy-danh-sách-tất-cả-tài-khoản-admin-only) | Lấy danh sách tất cả tài khoản | Admin only |
+| GET | [`/api/v1/users/all/:id`](#26-lấy-thông-tin-tài-khoản-theo-id-admin-only) | Lấy thông tin tài khoản theo id | Admin only |
 
 ### Movie APIs
 | Method | Endpoint | Description | Auth Required |
@@ -173,6 +173,9 @@ headers: {
 | GET | [`/api/v1/bookings/:id`](#64-lấy-chi-tiết-booking) | Lấy chi tiết vé đã đặt theo id | Login |
 | POST | [`/api/v1/bookings`](#61-tạo-booking-khi-chọn-ghế-đầu-tiên) | Tạo booking khi chọn ghế đầu tiên (hoặc update nếu đã có) | Login |
 | PATCH | [`/api/v1/bookings/:id/seats`](#62-thêm-bớt-ghế) | Thêm/bớt ghế vào booking hiện có | Login |
+| GET | [`/api/v1/bookings/all`](#65-lấy-danh-sách-tất-cả-booking-admin-only) | Lấy danh sách tất cả booking | Admin only |
+| GET | [`/api/v1/bookings/revenue`](#66-lấy-tổng-doanh-thu-admin-only) | Lấy tổng doanh thu theo khoảng thời gian | Admin only |
+| GET | [`/api/v1/bookings/statistics`](#67-thống-kê-booking-chi-tiết-admin-only) | Thống kê booking chi tiết với các filter | Admin only |
 
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
@@ -1052,6 +1055,233 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
   }
 }
 ```
+
+---
+
+#### 6.5. Lấy danh sách tất cả booking (Admin only)
+
+**Endpoint:** `GET /api/v1/bookings/all`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy danh sách tất cả booking trong hệ thống. Chỉ admin mới có quyền truy cập.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439014",
+      "user": "john_doe",
+      "movie": "Inception",
+      "cinema": "Cinemax Sinh Viên",
+      "address": "Nhà văn hóa sinh viên, TP.HCM",
+      "startTime": "2025-12-25T18:30:00.000Z",
+      "totalPrice": 90000,
+      "seat": ["A - 1", "A - 2"],
+      "quantity": 2,
+      "status": "confirmed",
+      "bookedAt": "2025-12-25T10:30:00.000Z",
+      "paidAt": "2025-12-25T10:32:00.000Z",
+      "paymentProvider": "zalopay",
+      "paymentTransId": "...",
+      "paymentMeta": {}
+    }
+  ]
+}
+```
+
+---
+
+#### 6.6. Lấy tổng doanh thu (Admin only)
+
+**Endpoint:** `GET /api/v1/bookings/revenue`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy tổng doanh thu từ các booking đã thanh toán (status = 'confirmed') trong một khoảng thời gian.
+
+**Query Parameters:**
+- `fromDate` (required): Ngày bắt đầu (format: YYYY-MM-DD)
+- `toDate` (required): Ngày kết thúc (format: YYYY-MM-DD)
+
+**Example Request:**
+```
+GET /api/v1/bookings/revenue?fromDate=2025-01-01&toDate=2025-12-31
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 4500000,
+    "fromDate": "2025-01-01T00:00:00.000Z",
+    "toDate": "2025-12-31T23:59:59.999Z"
+  }
+}
+```
+
+**Response (400 Bad Request) - Thiếu params:**
+```json
+{
+  "success": false,
+  "message": "fromDate and toDate are required (format: YYYY-MM-DD)"
+}
+```
+
+**Response (400 Bad Request) - Date range không hợp lệ:**
+```json
+{
+  "success": false,
+  "message": "fromDate must be less than or equal to toDate"
+}
+```
+
+**Lưu ý:**
+- Chỉ tính các booking có status = 'confirmed' (đã thanh toán)
+- Doanh thu được tính dựa trên `totalPrice` của booking
+- Thời gian được tính dựa trên `paidAt` (thời gian thanh toán)
+
+---
+
+#### 6.7. Thống kê booking chi tiết (Admin only)
+
+**Endpoint:** `GET /api/v1/bookings/statistics`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy thống kê chi tiết về booking với nhiều filter options. Có thể lọc theo khoảng thời gian, phim, rạp hoặc kết hợp các filter.
+
+**Query Parameters:**
+- `fromDate` (required): Ngày bắt đầu (format: YYYY-MM-DD)
+- `toDate` (required): Ngày kết thúc (format: YYYY-MM-DD)
+- `movieId` (optional): Lọc theo phim (MongoDB ObjectId)
+- `cinemaId` (optional): Lọc theo rạp (MongoDB ObjectId)
+
+**Example Requests:**
+```
+# Thống kê tất cả
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31
+
+# Thống kê theo phim
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=507f1f77bcf86cd799439011
+
+# Thống kê theo rạp
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&cinemaId=507f1f77bcf86cd799439012
+
+# Thống kê theo phim và rạp
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=507f1f77bcf86cd799439011&cinemaId=507f1f77bcf86cd799439012
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 4500000,
+    "totalBookings": 100,
+    "totalTickets": 250,
+    "byMovie": [
+      {
+        "movieId": "507f1f77bcf86cd799439011",
+        "movieTitle": "Inception",
+        "revenue": 2000000,
+        "tickets": 120,
+        "bookings": 50
+      },
+      {
+        "movieId": "507f1f77bcf86cd799439012",
+        "movieTitle": "Avatar 3",
+        "revenue": 1500000,
+        "tickets": 80,
+        "bookings": 30
+      }
+    ],
+    "byCinema": [
+      {
+        "cinemaId": "507f1f77bcf86cd799439013",
+        "cinemaName": "Cinemax Sinh Viên",
+        "revenue": 1800000,
+        "tickets": 100,
+        "bookings": 40
+      },
+      {
+        "cinemaId": "507f1f77bcf86cd799439014",
+        "cinemaName": "CGV Landmark",
+        "revenue": 1200000,
+        "tickets": 70,
+        "bookings": 25
+      }
+    ],
+    "filters": {
+      "fromDate": "2025-01-01T00:00:00.000Z",
+      "toDate": "2025-12-31T23:59:59.999Z",
+      "movieId": null,
+      "cinemaId": null
+    }
+  }
+}
+```
+
+**Response (200 OK) - Với filter theo phim:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 2000000,
+    "totalBookings": 50,
+    "totalTickets": 120,
+    "byMovie": [
+      {
+        "movieId": "507f1f77bcf86cd799439011",
+        "movieTitle": "Inception",
+        "revenue": 2000000,
+        "tickets": 120,
+        "bookings": 50
+      }
+    ],
+    "byCinema": [
+      {
+        "cinemaId": "507f1f77bcf86cd799439013",
+        "cinemaName": "Cinemax Sinh Viên",
+        "revenue": 1200000,
+        "tickets": 60,
+        "bookings": 25
+      }
+    ],
+    "filters": {
+      "fromDate": "2025-01-01T00:00:00.000Z",
+      "toDate": "2025-12-31T23:59:59.999Z",
+      "movieId": "507f1f77bcf86cd799439011",
+      "cinemaId": null
+    }
+  }
+}
+```
+
+**Response (400 Bad Request) - Thiếu params:**
+```json
+{
+  "success": false,
+  "message": "fromDate and toDate are required (format: YYYY-MM-DD)"
+}
+```
+
+**Response (400 Bad Request) - Invalid ObjectId:**
+```json
+{
+  "success": false,
+  "message": "Invalid movieId format"
+}
+```
+
+**Lưu ý:**
+- Chỉ tính các booking có status = 'confirmed' (đã thanh toán)
+- `byMovie` và `byCinema` được sắp xếp theo doanh thu giảm dần
+- Có thể kết hợp nhiều filter cùng lúc (movieId + cinemaId)
+- Nếu không có dữ liệu, các mảng sẽ trả về rỗng và tổng = 0
 
 ---
 
