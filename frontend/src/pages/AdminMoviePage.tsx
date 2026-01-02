@@ -6,7 +6,6 @@ import type { Movie } from "../services/movieService";
 import { fetchMovies, createMovie, updateMovie, deleteMovie } from "../services/movieService";
 import { useTheme } from "../context/ThemeContext";
 
-// Movies are loaded from the API via `movieService.fetchMovies`
 
 export default function AdminMoviePage() {
     const { isDarkTheme } = useTheme();
@@ -105,19 +104,6 @@ export default function AdminMoviePage() {
         if (p < 1) p = 1;
         if (p > totalPages) p = totalPages;
         setPage(p);
-    };
-
-    const prevPage = () => goToPage(page - 1);
-    const nextPage = () => goToPage(page + 1);
-
-    const getPageRange = () => {
-        if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-        const window = 2; // show current +/- window
-        let start = Math.max(1, page - window);
-        let end = Math.min(totalPages, page + window);
-        if (page <= window) end = 1 + window * 2;
-        if (page + window >= totalPages) start = totalPages - window * 2;
-        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
     };
 
     const displayDate = (iso?: string) => {
