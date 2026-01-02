@@ -1,13 +1,20 @@
 const Movie = require('../models/movie.model');
 
-// GET api/v1/movies?status=now_showing&page=1&limit=8
-const getMoviesByQuery = async (page, limit, status) => {
+// GET api/v1/movies?status=now_showing&page=1&limit=8&search=name
+const getMoviesByQuery = async (page, limit, status, search) => {
   const skip = (page - 1) * limit
-  const results = Movie.find({ status }).skip(skip).limit(limit)
-  const totalMovie = Movie.countDocuments({ status }) // get total movies with status
+
+  // Build query filter
+  const filter = { status }
+  if (search) {
+    filter.title = { $regex: search, $options: 'i' } // case-insensitive search
+  }
+
+  const results = Movie.find(filter).skip(skip).limit(limit)
+  const totalMovie = Movie.countDocuments(filter) // get total movies with status and search
   const [movies, total] = await Promise.all([results, totalMovie])
   const totalPages = Math.ceil(total / limit)
-  
+
   return {
     movies,
     pagination: {

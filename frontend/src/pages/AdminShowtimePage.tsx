@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../index.css";
-import { Pagination as AntPagination, ConfigProvider, theme, message, Spin, Input, Select, DatePicker } from "antd";
+import { Pagination as AntPagination, ConfigProvider, theme, message, Spin, Select, DatePicker } from "antd";
 import { fetchShowtimes, createShowtime, updateShowtime, deleteShowtime, type ShowtimeListItem, type Pagination as PagingInfo } from "../services/showtimeService";
 import { fetchCinemas, type Cinema } from "../services/cinemaService";
 import { fetchMovies } from "../services/movieService";

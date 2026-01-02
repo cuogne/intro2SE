@@ -6,7 +6,6 @@ import type { Movie } from "../services/movieService";
 import { fetchMovies, createMovie, updateMovie, deleteMovie } from "../services/movieService";
 import { useTheme } from "../context/ThemeContext";
 
-
 export default function AdminMoviePage() {
     const { isDarkTheme } = useTheme();
     const [movies, setMovies] = useState<Movie[]>([]);
@@ -18,7 +17,7 @@ export default function AdminMoviePage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     // Pagination state
     const [page, setPage] = useState<number>(1);
-    const pageSize = 5;
+    const pageSize = 10;
     const [total, setTotal] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(1);
     const startIndex = (page - 1) * pageSize;
@@ -27,16 +26,25 @@ export default function AdminMoviePage() {
     // Filters / search
     const [statusFilter, setStatusFilter] = useState<"" | "Now Showing" | "Coming Soon" | "Ended">("");
     const [searchText, setSearchText] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    // Debounce search text
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchText);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchText]);
 
     useEffect(() => {
         loadMovies(page);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, statusFilter]);
+    }, [page, statusFilter, debouncedSearch]);
 
     async function loadMovies(p = page) {
         setIsLoading(true);
         try {
-            const res = await fetchMovies(statusFilter || undefined, p, pageSize);
+            const res = await fetchMovies(statusFilter || undefined, p, pageSize, debouncedSearch || undefined);
             setMovies(res.movies.map(apiToUI));
             setTotal(res.pagination.total);
             setTotalPages(res.pagination.totalPages);
@@ -182,8 +190,6 @@ export default function AdminMoviePage() {
         }
     };
 
-    const filteredItems = pageItems.filter((m) => !searchText.trim() || m.title.toLowerCase().includes(searchText.toLowerCase()));
-
     return (
         <div>
             <div>
@@ -251,7 +257,7 @@ export default function AdminMoviePage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                        {filteredItems.map((m) => (
+                                        {pageItems.map((m) => (
                                             <tr key={m._id} className="hover:bg-slate-50 dark:hover:bg-border-dark/50 transition-colors group">
                                                 <td className="p-4">
                                                     <div className="w-10 h-14 bg-cover bg-center rounded shadow-sm" style={{ backgroundImage: `url('${m.posterImg}')` }} />
@@ -331,7 +337,7 @@ export default function AdminMoviePage() {
 
                         <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark/50">
                             <div className="text-xs text-slate-500 dark:text-text-secondary">
-                                Hiển thị {total === 0 ? 0 : startIndex + 1}-{total === 0 ? 0 : startIndex + filteredItems.length} của {total} phim
+                                Hiển thị {total === 0 ? 0 : startIndex + 1}-{total === 0 ? 0 : startIndex + pageItems.length} của {total} phim
                             </div>
                             <ConfigProvider
                                 theme={{
