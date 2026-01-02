@@ -113,8 +113,8 @@ headers: {
   status: 'pending' | 'confirmed' | 'cancelled';
   holdExpiresAt: Date;    // Thời gian hết hạn giữ ghế (chỉ có khi status = 'pending')
   paidAt: Date;           // Thời gian thanh toán (chỉ có khi status = 'confirmed')
-  paymentProvider: string; // 'zalopay'
-  paymentTransId: string; // Transaction ID từ Zalopay
+  paymentProvider: string; // 'zalopay' | 'momo'
+  paymentTransId: string; // Transaction ID từ payment provider
   paymentMeta: object;    // Metadata thanh toán
   bookedAt: Date;
 }
@@ -135,9 +135,9 @@ headers: {
 | GET | [`/api/v1/users/me`](#21-lấy-thông-tin-tài-khoản-của-mình) | Lấy thông tin tài khoản của chính mình | Login |
 | PUT | [`/api/v1/users/me/update`](#22-cập-nhật-thông-tin-tài-khoản) | Cập nhật thông tin tài khoản (username, email) | Login |
 | DELETE | [`/api/v1/users/me`](#23-xóa-tài-khoản) | Xóa tài khoản của chính mình | Login |
-| GET | [`/api/v1/users/all`](#24-lấy-danh-sách-tất-cả-tài-khoản-admin-only) | Lấy danh sách tất cả tài khoản | Admin only |
-| GET | [`/api/v1/users/all/:id`](#25-lấy-thông-tin-tài-khoản-theo-id-admin-only) | Lấy thông tin tài khoản theo id | Admin only |
-| PUT | [`/api/v1/users/me/password`](#26-đổi-mật-khẩu) | Đổi mật khẩu | Login |
+| PUT | [`/api/v1/users/me/password`](#24-đổi-mật-khẩu) | Đổi mật khẩu | Login |
+| GET | [`/api/v1/users/all`](#25-lấy-danh-sách-tất-cả-tài-khoản-admin-only) | Lấy danh sách tất cả tài khoản | Admin only |
+| GET | [`/api/v1/users/all/:id`](#26-lấy-thông-tin-tài-khoản-theo-id-admin-only) | Lấy thông tin tài khoản theo id | Admin only |
 
 ### Movie APIs
 | Method | Endpoint | Description | Auth Required |
@@ -173,12 +173,17 @@ headers: {
 | GET | [`/api/v1/bookings/:id`](#64-lấy-chi-tiết-booking) | Lấy chi tiết vé đã đặt theo id | Login |
 | POST | [`/api/v1/bookings`](#61-tạo-booking-khi-chọn-ghế-đầu-tiên) | Tạo booking khi chọn ghế đầu tiên (hoặc update nếu đã có) | Login |
 | PATCH | [`/api/v1/bookings/:id/seats`](#62-thêm-bớt-ghế) | Thêm/bớt ghế vào booking hiện có | Login |
+| GET | [`/api/v1/bookings/all`](#65-lấy-danh-sách-tất-cả-booking-admin-only) | Lấy danh sách tất cả booking | Admin only |
+| GET | [`/api/v1/bookings/revenue`](#66-lấy-tổng-doanh-thu-admin-only) | Lấy tổng doanh thu theo khoảng thời gian | Admin only |
+| GET | [`/api/v1/bookings/statistics`](#67-thống-kê-booking-chi-tiết-admin-only) | Thống kê booking chi tiết với các filter | Admin only |
 
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | [`/api/v1/payments`](#71-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
-| POST | [`/api/v1/payments/callback`](#72-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
+| POST | [`/api/v1/payments/zalopay`](#71-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
+| POST | [`/api/v1/payments/zalopay/callback`](#72-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
+| POST | [`/api/v1/payments/momo`](#73-tạo-order-thanh-toán-momo) | Tạo order thanh toán Momo từ booking | Login |
+| POST | [`/api/v1/payments/momo/callback`](#74-callback-từ-momo) | Callback từ Momo (Momo tự động gọi) | No |
 
 ### 1. Authentication APIs
 
@@ -1055,11 +1060,238 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 ---
 
+#### 6.5. Lấy danh sách tất cả booking (Admin only)
+
+**Endpoint:** `GET /api/v1/bookings/all`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy danh sách tất cả booking trong hệ thống. Chỉ admin mới có quyền truy cập.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439014",
+      "user": "john_doe",
+      "movie": "Inception",
+      "cinema": "Cinemax Sinh Viên",
+      "address": "Nhà văn hóa sinh viên, TP.HCM",
+      "startTime": "2025-12-25T18:30:00.000Z",
+      "totalPrice": 90000,
+      "seat": ["A - 1", "A - 2"],
+      "quantity": 2,
+      "status": "confirmed",
+      "bookedAt": "2025-12-25T10:30:00.000Z",
+      "paidAt": "2025-12-25T10:32:00.000Z",
+      "paymentProvider": "zalopay",
+      "paymentTransId": "...",
+      "paymentMeta": {}
+    }
+  ]
+}
+```
+
+---
+
+#### 6.6. Lấy tổng doanh thu (Admin only)
+
+**Endpoint:** `GET /api/v1/bookings/revenue`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy tổng doanh thu từ các booking đã thanh toán (status = 'confirmed') trong một khoảng thời gian.
+
+**Query Parameters:**
+- `fromDate` (required): Ngày bắt đầu (format: YYYY-MM-DD)
+- `toDate` (required): Ngày kết thúc (format: YYYY-MM-DD)
+
+**Example Request:**
+```
+GET /api/v1/bookings/revenue?fromDate=2025-01-01&toDate=2025-12-31
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 4500000,
+    "fromDate": "2025-01-01T00:00:00.000Z",
+    "toDate": "2025-12-31T23:59:59.999Z"
+  }
+}
+```
+
+**Response (400 Bad Request) - Thiếu params:**
+```json
+{
+  "success": false,
+  "message": "fromDate and toDate are required (format: YYYY-MM-DD)"
+}
+```
+
+**Response (400 Bad Request) - Date range không hợp lệ:**
+```json
+{
+  "success": false,
+  "message": "fromDate must be less than or equal to toDate"
+}
+```
+
+**Lưu ý:**
+- Chỉ tính các booking có status = 'confirmed' (đã thanh toán)
+- Doanh thu được tính dựa trên `totalPrice` của booking
+- Thời gian được tính dựa trên `paidAt` (thời gian thanh toán)
+
+---
+
+#### 6.7. Thống kê booking chi tiết (Admin only)
+
+**Endpoint:** `GET /api/v1/bookings/statistics`
+
+**Authentication:** Required (Admin only)
+
+**Mô tả:** API này dùng để lấy thống kê chi tiết về booking với nhiều filter options. Có thể lọc theo khoảng thời gian, phim, rạp hoặc kết hợp các filter.
+
+**Query Parameters:**
+- `fromDate` (required): Ngày bắt đầu (format: YYYY-MM-DD)
+- `toDate` (required): Ngày kết thúc (format: YYYY-MM-DD)
+- `movieId` (optional): Lọc theo phim (MongoDB ObjectId)
+- `cinemaId` (optional): Lọc theo rạp (MongoDB ObjectId)
+
+**Example Requests:**
+```
+# Thống kê tất cả
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31
+
+# Thống kê theo phim
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=507f1f77bcf86cd799439011
+
+# Thống kê theo rạp
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&cinemaId=507f1f77bcf86cd799439012
+
+# Thống kê theo phim và rạp
+GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=507f1f77bcf86cd799439011&cinemaId=507f1f77bcf86cd799439012
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 4500000,
+    "totalBookings": 100,
+    "totalTickets": 250,
+    "byMovie": [
+      {
+        "movieId": "507f1f77bcf86cd799439011",
+        "movieTitle": "Inception",
+        "revenue": 2000000,
+        "tickets": 120,
+        "bookings": 50
+      },
+      {
+        "movieId": "507f1f77bcf86cd799439012",
+        "movieTitle": "Avatar 3",
+        "revenue": 1500000,
+        "tickets": 80,
+        "bookings": 30
+      }
+    ],
+    "byCinema": [
+      {
+        "cinemaId": "507f1f77bcf86cd799439013",
+        "cinemaName": "Cinemax Sinh Viên",
+        "revenue": 1800000,
+        "tickets": 100,
+        "bookings": 40
+      },
+      {
+        "cinemaId": "507f1f77bcf86cd799439014",
+        "cinemaName": "CGV Landmark",
+        "revenue": 1200000,
+        "tickets": 70,
+        "bookings": 25
+      }
+    ],
+    "filters": {
+      "fromDate": "2025-01-01T00:00:00.000Z",
+      "toDate": "2025-12-31T23:59:59.999Z",
+      "movieId": null,
+      "cinemaId": null
+    }
+  }
+}
+```
+
+**Response (200 OK) - Với filter theo phim:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalRevenue": 2000000,
+    "totalBookings": 50,
+    "totalTickets": 120,
+    "byMovie": [
+      {
+        "movieId": "507f1f77bcf86cd799439011",
+        "movieTitle": "Inception",
+        "revenue": 2000000,
+        "tickets": 120,
+        "bookings": 50
+      }
+    ],
+    "byCinema": [
+      {
+        "cinemaId": "507f1f77bcf86cd799439013",
+        "cinemaName": "Cinemax Sinh Viên",
+        "revenue": 1200000,
+        "tickets": 60,
+        "bookings": 25
+      }
+    ],
+    "filters": {
+      "fromDate": "2025-01-01T00:00:00.000Z",
+      "toDate": "2025-12-31T23:59:59.999Z",
+      "movieId": "507f1f77bcf86cd799439011",
+      "cinemaId": null
+    }
+  }
+}
+```
+
+**Response (400 Bad Request) - Thiếu params:**
+```json
+{
+  "success": false,
+  "message": "fromDate and toDate are required (format: YYYY-MM-DD)"
+}
+```
+
+**Response (400 Bad Request) - Invalid ObjectId:**
+```json
+{
+  "success": false,
+  "message": "Invalid movieId format"
+}
+```
+
+**Lưu ý:**
+- Chỉ tính các booking có status = 'confirmed' (đã thanh toán)
+- `byMovie` và `byCinema` được sắp xếp theo doanh thu giảm dần
+- Có thể kết hợp nhiều filter cùng lúc (movieId + cinemaId)
+- Nếu không có dữ liệu, các mảng sẽ trả về rỗng và tổng = 0
+
+---
+
 ### 7. Payment APIs
 
 #### 7.1. Tạo order thanh toán Zalopay
 
-**Endpoint:** `POST /api/v1/payments`
+**Endpoint:** `POST /api/v1/payments/zalopay`
 
 **Authentication:** Required
 
@@ -1096,7 +1328,7 @@ GET /api/v1/showtimes?movieId=507f1f77bcf86cd799439011&date=2025-12-25&page=1&li
 
 #### 7.2. Callback từ Zalopay
 
-**Endpoint:** `POST /api/v1/payments/callback`
+**Endpoint:** `POST /api/v1/payments/zalopay/callback`
 
 **Authentication:** Không cần (Zalopay tự động gọi, không cần code để gọi tới API này)
 
@@ -1130,6 +1362,131 @@ ngrok http 3000
 Tài khoản Zalopay Sandbox để test chuyển khoản VISA: 4111 1111 1111 1111
 
 AE có thể đọc thêm doc của Zalopay tại đây: https://developers.zalopay.vn/v2/general/overview.html
+
+---
+
+#### 7.3. Tạo order thanh toán Momo
+
+**Endpoint:** `POST /api/v1/payments/momo`
+
+**Authentication:** Required
+
+**Mô tả:** Tạo order thanh toán Momo từ booking. Booking phải có status `pending` và còn hiệu lực (chưa hết hạn 5 phút).
+
+**Lưu ý:** Khi user ấn thanh toán, chỉ cần gửi `bookingId`. Backend sẽ tự động lấy toàn bộ ghế từ booking để tạo order thanh toán Momo.
+
+**Request Body:**
+```json
+{
+  "bookingId": "507f1f77bcf86cd799439014"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "partnerCode": "MOMO",
+  "orderId": "MOMO1767354253392",
+  "requestId": "MOMO1767354253392",
+  "amount": 30000,
+  "responseTime": 1767354253904,
+  "message": "Thành công.",
+  "resultCode": 0,
+  "payUrl": "https://test-payment.momo.vn/v2/gateway/pay?t=TU9NT3xNT01PMTc2NzM1NDI1MzM5Mg&s=e751e568ba8ed9aa492a8d1fcaaf8cf1957996ec17b4003b3422c874930376be"
+}
+```
+
+**Response (400 Bad Request) - Booking đã hết hạn:**
+```json
+{
+  "success": false,
+  "message": "Error creating Momo payment order",
+  "error": "Booking has expired. Please select seats again."
+}
+```
+
+**Response (400 Bad Request) - Booking đã thanh toán:**
+```json
+{
+  "success": false,
+  "message": "Error creating Momo payment order",
+  "error": "Booking already paid"
+}
+```
+
+**Lưu ý:**
+- Nếu booking đã hết hạn (quá 5 phút), sẽ trả về lỗi và không tạo được order thanh toán
+- Frontend có thể sử dụng `payUrl` để redirect người dùng đến trang thanh toán Momo
+- Hoặc sử dụng `qrCodeUrl` để hiển thị QR code cho người dùng quét
+- Hoặc sử dụng `deeplink` để mở app Momo trên mobile
+
+---
+
+#### 7.4. Callback từ Momo
+
+**Endpoint:** `POST /api/v1/payments/momo/callback`
+
+**Authentication:** Không cần (Momo tự động gọi, không cần code để gọi tới API này)
+
+**Mô tả:** Endpoint này được Momo tự động gọi sau khi thanh toán thành công hoặc thất bại. Backend sẽ tự động cập nhật booking status thành `confirmed` nếu thanh toán thành công.
+
+**Request Body (từ Momo):**
+```json
+{
+  "partnerCode": "MOMO",
+  "orderId": "MOMO1712108682648",
+  "requestId": "MOMO1712108682648",
+  "amount": 90000,
+  "orderInfo": "Thanh toán vé xem phim - Inception tại Cinemax Sinh Viên",
+  "orderType": "momo_wallet",
+  "transId": 4014083433,
+  "resultCode": 0,
+  "message": "Thành công.",
+  "payType": "qr",
+  "responseTime": 1712108811069,
+  "extraData": "",
+  "signature": "10398fbe70cd3052f443da99f7c4befbf49ab0d0c6cd7dc14efffd6e09a526c0"
+}
+```
+
+**Response (204 No Content) - Thành công:**
+```
+Status: 204 No Content
+```
+
+**Response (200 OK) - Lỗi:**
+```json
+{
+  "resultCode": -1,
+  "message": "Error message"
+}
+```
+
+**Lưu ý:** 
+- Frontend không cần gọi API này. Đây là webhook từ Momo.
+- `resultCode = 0`: Giao dịch thành công
+- `resultCode = 9000`: Giao dịch được cấp quyền (authorization) thành công
+- `resultCode <> 0`: Giao dịch thất bại
+
+**Để chạy được:**
+1. Cài `ngrok` [https://ngrok.com/] và lấy token
+2. Chạy: `ngrok http 3000`
+3. Lấy URL từ ngrok và dán vào `.env` ở `MOMO_CALLBACK_URL` hoặc `MOMO_IPN_URL`
+4. Cấu hình `MOMO_REDIRECT_URL` trong `.env` để chuyển hướng người dùng đến trang thanh toán thành công
+
+**Environment Variables cần thiết:**
+```env
+MOMO_ACCESS_KEY=your_access_key
+MOMO_SECRET_KEY=your_secret_key
+MOMO_PARTNER_CODE=MOMO
+MOMO_CALLBACK_URL=https://your-ngrok-url/api/v1/payments/momo/callback
+MOMO_REDIRECT_URL=http://localhost:3000
+```
+
+**Tài khoản Momo Sandbox để test:**
+- Sử dụng tài khoản Momo test từ [Momo Developer Portal](https://developers.momo.vn/)
+
+AE có thể đọc thêm doc của Momo tại đây: https://developers.momo.vn/
 
 ---
 

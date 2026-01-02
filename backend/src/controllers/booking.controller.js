@@ -139,9 +139,161 @@ const updateBookingSeats = async (req, res) => {
   }
 };
 
+const getAllBookings = async (req, res) => {
+  try {
+    const result = await bookingService.getAllBookings();
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  }
+  catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: 'Error getting all bookings',
+      error: error.message,
+    });
+  }
+}
+
+const getTotalRevenue = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    // Validate required params
+    if (!fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromDate and toDate are required (format: YYYY-MM-DD)',
+      });
+    }
+
+    // Validate date format
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+
+    if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use YYYY-MM-DD format',
+      });
+    }
+
+    // Validate date range
+    if (fromDateObj > toDateObj) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromDate must be less than or equal to toDate',
+      });
+    }
+
+    // Set time to start of day for fromDate and end of day for toDate
+    fromDateObj.setHours(0, 0, 0, 0);
+    toDateObj.setHours(23, 59, 59, 999);
+
+    const totalRevenue = await bookingService.getTotalRevenue(fromDateObj, toDateObj);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalRevenue,
+        fromDate: fromDateObj,
+        toDate: toDateObj
+      },
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: 'Error getting total revenue',
+      error: error.message,
+    });
+  }
+}
+
+const getBookingStatistics = async (req, res) => {
+  try {
+    const { fromDate, toDate, movieId, cinemaId } = req.query;
+
+    // Validate required params
+    if (!fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromDate and toDate are required (format: YYYY-MM-DD)',
+      });
+    }
+
+    // Validate date format
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+
+    if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use YYYY-MM-DD format',
+      });
+    }
+
+    // Validate date range
+    if (fromDateObj > toDateObj) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromDate must be less than or equal to toDate',
+      });
+    }
+
+    // Validate ObjectId format if provided
+    if (movieId && !require('mongoose').Types.ObjectId.isValid(movieId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid movieId format',
+      });
+    }
+
+    if (cinemaId && !require('mongoose').Types.ObjectId.isValid(cinemaId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid cinemaId format',
+      });
+    }
+
+    // Set time to start of day for fromDate and end of day for toDate
+    fromDateObj.setHours(0, 0, 0, 0);
+    toDateObj.setHours(23, 59, 59, 999);
+
+    const statistics = await bookingService.getBookingStatistics(
+      fromDateObj,
+      toDateObj,
+      movieId || null,
+      cinemaId || null
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...statistics,
+        filters: {
+          fromDate: fromDateObj,
+          toDate: toDateObj,
+          movieId: movieId || null,
+          cinemaId: cinemaId || null
+        }
+      },
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: 'Error getting booking statistics',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   getBookingById,
   getBookingByUser,
   reserveSeats,
   updateBookingSeats,
+  getAllBookings,
+  getTotalRevenue,
+  getBookingStatistics,
 };

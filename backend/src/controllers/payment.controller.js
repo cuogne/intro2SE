@@ -3,7 +3,7 @@ const Booking = require('../models/booking.model');
 
 // POST /api/v1/payments
 // Tạo order thanh toán Zalopay từ booking
-const createOrder = async (req, res) => {
+const createZalopayOrder = async (req, res) => {
   try {
     const userId = req.user.id;
     const { bookingId } = req.body;
@@ -42,7 +42,7 @@ const createOrder = async (req, res) => {
 // POST /api/v1/payments/callback
 // Callback từ Zalopay (Zalopay tự động gọi endpoint này)
 // Zalopay gửi: { data: "...", mac: "..." }
-const handleCallback = async (req, res) => {
+const handleZalopayCallback = async (req, res) => {
   try {
     // Zalopay gửi callback với format: { data: "...", mac: "..." }
     const dataStr = req.body.data;
@@ -71,9 +71,33 @@ const handleCallback = async (req, res) => {
       return_message: error.message
     });
   }
+}
+
+// MOMO
+const createMoMoOrder = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ success: false, message: 'bookingId is required' });
+
+    const result = await paymentService.createMomoOrder(bookingId);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const handleMoMoCallback = async (req, res) => {
+  try {
+    await paymentService.handleMomoCallback(req.body);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 module.exports = {
-  createOrder,
-  handleCallback,
+  createZalopayOrder,
+  handleZalopayCallback,
+  createMoMoOrder,
+  handleMoMoCallback,
 };
