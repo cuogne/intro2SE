@@ -544,12 +544,54 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
       totalTickets: 0
     };
 
+    // Get all bookings matching the filters
+    const bookingQuery = { status: 'confirmed', paidAt: { $gte: new Date(fromDate), $lte: new Date(toDate) } };
+    const bookings = await Booking.find(bookingQuery)
+      .populate('user', 'username')
+      .populate({
+        path: 'showtime',
+        select: 'startTime totalPrice movie cinema',
+        populate: [
+          { path: 'movie', select: 'title minutes' },
+          { path: 'cinema', select: 'name address' }
+        ]
+      })
+      .sort({ bookedAt: -1 });
+
+    // Filter by movie and cinema if specified
+    let filteredBookings = bookings;
+    if (movieId) {
+      filteredBookings = filteredBookings.filter(b => b.showtime?.movie?._id?.toString() === movieId);
+    }
+    if (cinemaId) {
+      filteredBookings = filteredBookings.filter(b => b.showtime?.cinema?._id?.toString() === cinemaId);
+    }
+
+    const transactionsList = filteredBookings.map(booking => ({
+      id: booking._id,
+      user: booking.user?.username || null,
+      movie: booking.showtime?.movie?.title || null,
+      cinema: booking.showtime?.cinema?.name || null,
+      address: booking.showtime?.cinema?.address || null,
+      startTime: booking.showtime?.startTime || null,
+      totalPrice: booking.totalPrice,
+      seat: booking.seat.map(s => `${s.row} - ${s.number}`),
+      quantity: booking.seat.length,
+      status: booking.status,
+      bookedAt: booking.bookedAt,
+      paidAt: booking.paidAt || null,
+      paymentProvider: booking.paymentProvider || null,
+      paymentTransId: booking.paymentTransId || null,
+      paymentMeta: booking.paymentMeta || null,
+    }));
+
     return {
       totalRevenue: stats.totalRevenue || 0,
       totalBookings: stats.totalBookings || 0,
       totalTickets: stats.totalTickets || 0,
       byMovie: byMovie || [],
-      byCinema: byCinema || []
+      byCinema: byCinema || [],
+      transactions: transactionsList
     };
   } catch (error) {
     throw new Error('Error calculating booking statistics: ' + error.message);
