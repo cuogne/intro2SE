@@ -53,6 +53,31 @@ export interface CinemaShowtimeGroup {
 //   return dates;
 // };
 
+export interface ShowtimeSeat {
+  row: string;
+  number: number;
+  isBooked: boolean;
+}
+
+export interface ShowtimeDetail {
+  _id: string;
+  movie: {
+    _id: string;
+    title: string;
+    minutes: number;
+  };
+  cinema: {
+    _id: string;
+    name: string;
+    address: string;
+  };
+  startTime: string;
+  price: number;
+  totalSeats: number;
+  availableSeats: number;
+  seats: ShowtimeSeat[];
+}
+
 export const getFixedDates = () => {
   // Lưu ý: Month trong JS bắt đầu từ 0 (11 là tháng 12)
   const fixedDates = [
@@ -65,6 +90,22 @@ export const getFixedDates = () => {
     dayName: `Thứ ${d.getDay() + 1 === 1 ? 'CN' : d.getDay() + 1}`,
     dateStr: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`
   }));
+};
+
+// GET /api/v1/showtimes/:id - Lấy chi tiết showtime với thông tin ghế
+export const fetchShowtimeDetail = async (showtimeId: string): Promise<ShowtimeDetail | null> => {
+  try {
+    const response = await api.get(`/v1/showtimes/${showtimeId}`);
+    const data = response.data;
+    
+    if (data.data) {
+      return data.data;
+    }
+    return data;
+  } catch (error) {
+    console.error('Error fetching showtime detail:', error);
+    return null;
+  }
 };
 
 // Hàm lấy và xử lý dữ liệu thật

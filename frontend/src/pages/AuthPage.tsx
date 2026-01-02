@@ -81,30 +81,34 @@ const AuthPage: React.FC = () => {
   return (
     <div className="flex flex-col items-center pt-10 pb-20">
       <div className="mb-6">
-        <User className="w-16 h-16 border-2 border-black rounded-full p-2" />
+        <User className="w-16 h-16 border-2 border-white rounded-full p-2 text-white" />
       </div>
 
-      <div className="flex border border-gray-300 rounded mb-8 overflow-hidden">
+      <div className="flex border border-[#324467] rounded mb-8 overflow-hidden bg-[#232f48]">
         <button 
           onClick={() => { setIsRegister(false); setError(''); }}
-          className={`px-6 py-2 text-sm font-medium cursor-pointer ${!isRegister ? 'bg-black text-white' : 'bg-white text-black'}`}
+          className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${
+            !isRegister ? 'bg-primary text-white' : 'bg-transparent text-text-secondary hover:text-white'
+          }`}
         >
           Đăng nhập
         </button>
         <button 
           onClick={() => { setIsRegister(true); setError(''); }}
-          className={`px-6 py-2 text-sm font-medium cursor-pointer ${isRegister ? 'bg-black text-white' : 'bg-white text-black'}`}
+          className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${
+            isRegister ? 'bg-primary text-white' : 'bg-transparent text-text-secondary hover:text-white'
+          }`}
         >
           Đăng ký
         </button>
       </div>
 
       <div className="w-full max-w-md space-y-4 px-4">
-        {error && <div className="text-red-500 text-sm text-center font-bold bg-red-50 p-2 rounded border border-red-200">{error}</div>}
+        {error && <div className="text-red-400 text-sm text-center font-bold bg-red-500/20 p-3 rounded border border-red-500/50">{error}</div>}
         
         {/* Username Input */}
         <div className="relative">
-            <label className="block text-sm font-bold mb-2">Tên tài khoản</label>
+            <label className="block text-sm font-bold mb-2 text-white">Tên tài khoản</label>
             <div className="relative">
                 <input 
                     name="username"
@@ -112,16 +116,16 @@ const AuthPage: React.FC = () => {
                     value={formData.username}
                     onChange={handleChange}
                     placeholder="Nhập tên tài khoản"
-                    className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                    className="w-full bg-[#232f48] border-2 border-[#324467] text-white rounded p-3 pl-10 focus:outline-none focus:border-primary placeholder:text-text-secondary"
                 />
-                <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-3.5 w-5 h-5 text-text-secondary" />
             </div>
         </div>
 
         {/* Email Input - CHỈ HIỆN KHI ĐĂNG KÝ */}
         {isRegister && (
             <div className="relative">
-                <label className="block text-sm font-bold mb-2">Email</label>
+                <label className="block text-sm font-bold mb-2 text-white">Email</label>
                 <div className="relative">
                     <input 
                         name="email"
@@ -129,16 +133,16 @@ const AuthPage: React.FC = () => {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="example@email.com"
-                        className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                        className="w-full bg-[#232f48] border-2 border-[#324467] text-white rounded p-3 pl-10 focus:outline-none focus:border-primary placeholder:text-text-secondary"
                     />
-                    <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3.5 w-5 h-5 text-text-secondary" />
                 </div>
             </div>
         )}
 
         {/* Password Input */}
         <div className="relative">
-            <label className="block text-sm font-bold mb-2">Mật khẩu</label>
+            <label className="block text-sm font-bold mb-2 text-white">Mật khẩu</label>
             <div className="relative">
                 <input 
                     name="password"
@@ -146,16 +150,16 @@ const AuthPage: React.FC = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Nhập mật khẩu"
-                    className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                    className="w-full bg-[#232f48] border-2 border-[#324467] text-white rounded p-3 pl-10 focus:outline-none focus:border-primary placeholder:text-text-secondary"
                 />
-                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-text-secondary" />
             </div>
         </div>
 
         {/* Confirm Password - CHỈ HIỆN KHI ĐĂNG KÝ */}
         {isRegister && (
             <div className="relative">
-                <label className="block text-sm font-bold mb-2">Nhập lại mật khẩu</label>
+                <label className="block text-sm font-bold mb-2 text-white">Nhập lại mật khẩu</label>
                 <div className="relative">
                     <input 
                         name="confirmPassword"
@@ -163,9 +167,9 @@ const AuthPage: React.FC = () => {
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         placeholder="Xác nhận mật khẩu"
-                        className="w-full border-2 border-black rounded p-3 pl-10 focus:outline-none"
+                        className="w-full bg-[#232f48] border-2 border-[#324467] text-white rounded p-3 pl-10 focus:outline-none focus:border-primary placeholder:text-text-secondary"
                     />
-                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-text-secondary" />
                 </div>
             </div>
         )}
@@ -173,7 +177,7 @@ const AuthPage: React.FC = () => {
         <div className="pt-4 flex justify-center">
             <button 
                 onClick={handleSubmit}
-                className="bg-black text-white px-8 py-3 rounded font-medium hover:bg-gray-800 transition-colors cursor-pointer w-full md:w-auto"
+                className="bg-primary text-white px-8 py-3 rounded font-medium hover:bg-primary/90 transition-colors cursor-pointer w-full md:w-auto"
             >
                 {isRegister ? 'Đăng ký' : 'Đăng nhập'}
             </button>

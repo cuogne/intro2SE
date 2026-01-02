@@ -10,7 +10,7 @@ const connectMongoDB = require('./config/mongodb.config');
 const { startCleanupJob } = require('./utils/cleanupJob');
 require('dotenv').config();
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 app.use('/api/v1/movies', movieRoute);
 app.use('/api/v1/cinemas', cinemaRoute);
@@ -26,13 +26,18 @@ const startServer = async () => {
     await connectMongoDB();
 
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`API endpoint: http://localhost:${PORT}/api/v1`);
+      console.log(`✅ Server is running on port ${PORT}`);
+      console.log(`📡 API endpoint: http://localhost:${PORT}/api/v1`);
+      console.log(`🌐 Frontend should connect to: http://localhost:${PORT}`);
 
       startCleanupJob();
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('❌ Failed to start server:', error.message);
+    console.error('\n💡 Please check:');
+    console.error('   1. Create a .env file in the backend directory');
+    console.error('   2. Add MONGO_URI=your_mongodb_connection_string');
+    console.error('   3. See .env.example for reference');
     process.exit(1);
   }
 };
