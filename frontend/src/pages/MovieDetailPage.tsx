@@ -79,7 +79,7 @@ const MovieDetailPage: React.FC = () => {
         </div>
 
         <div className="md:col-span-2 space-y-6">
-          <h1 className="text-4xl font-bold uppercase tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-4xl font-bold uppercase tracking-tight text-gray-900">
             {movie.title}
           </h1>
           <div className="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-text-secondary">
