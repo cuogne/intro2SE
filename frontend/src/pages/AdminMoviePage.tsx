@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import "../index.css";
-import { notification, Spin } from "antd";
+import { message, Spin, Input, Select, Pagination, ConfigProvider, theme } from "antd";
 import MovieFormModal from "../components/MovieFormModal";
 import type { Movie } from "../services/movieService";
 import { fetchMovies, createMovie, updateMovie, deleteMovie } from "../services/movieService";
-
-// Movies are loaded from the API via `movieService.fetchMovies`
+import { useTheme } from "../context/ThemeContext";
 
 export default function AdminMoviePage() {
+    const { isDarkTheme } = useTheme();
     const [movies, setMovies] = useState<Movie[]>([]);
     const [isAddOpen, setAddOpen] = useState(false); // show modal only when user clicks "Thêm phim mới"
     const [currentMovie, setCurrentMovie] = useState<Movie | null>(null);
@@ -17,7 +17,7 @@ export default function AdminMoviePage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     // Pagination state
     const [page, setPage] = useState<number>(1);
-    const pageSize = 5;
+    const pageSize = 10;
     const [total, setTotal] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(1);
     const startIndex = (page - 1) * pageSize;
@@ -26,16 +26,25 @@ export default function AdminMoviePage() {
     // Filters / search
     const [statusFilter, setStatusFilter] = useState<"" | "Now Showing" | "Coming Soon" | "Ended">("");
     const [searchText, setSearchText] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    // Debounce search text
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchText);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchText]);
 
     useEffect(() => {
         loadMovies(page);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, statusFilter]);
+    }, [page, statusFilter, debouncedSearch]);
 
     async function loadMovies(p = page) {
         setIsLoading(true);
         try {
-            const res = await fetchMovies(statusFilter || undefined, p, pageSize);
+            const res = await fetchMovies(statusFilter || undefined, p, pageSize, debouncedSearch || undefined);
             setMovies(res.movies.map(apiToUI));
             setTotal(res.pagination.total);
             setTotalPages(res.pagination.totalPages);
@@ -105,19 +114,6 @@ export default function AdminMoviePage() {
         setPage(p);
     };
 
-    const prevPage = () => goToPage(page - 1);
-    const nextPage = () => goToPage(page + 1);
-
-    const getPageRange = () => {
-        if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-        const window = 2; // show current +/- window
-        let start = Math.max(1, page - window);
-        let end = Math.min(totalPages, page + window);
-        if (page <= window) end = 1 + window * 2;
-        if (page + window >= totalPages) start = totalPages - window * 2;
-        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-    };
-
     const displayDate = (iso?: string) => {
         if (!iso) return "";
         if (iso.includes("-")) {
@@ -136,29 +132,29 @@ export default function AdminMoviePage() {
             if (payload._id) {
                 const res = await updateMovie(payload._id, uiToApi(payload));
                 if (!res) {
-                    notification.error({ message: "Cập nhật phim thất bại" });
+                    message.error("Cập nhật phim thất bại");
                     return;
                 }
                 // refresh current page
                 await loadMovies(page);
-                notification.success({ message: "Cập nhật phim thành công" });
+                message.success("Cập nhật phim thành công");
                 success = true;
             } else {
                 const res = await createMovie(uiToApi(payload));
                 if (!res) {
-                    notification.error({ message: "Tạo phim thất bại" });
+                    message.error("Tạo phim thất bại");
                     return;
                 }
                 // after creating, reload first page (or stay on current page)
                 // move to the page that contains newest item could be last page; for simplicity reload current page
                 await loadMovies(1);
                 setPage(1);
-                notification.success({ message: "Tạo phim thành công" });
+                message.success("Tạo phim thành công");
                 success = true;
             }
         } catch (err) {
             console.error(err);
-            notification.error({ message: "Lỗi khi lưu phim" });
+            message.error("Lỗi khi lưu phim");
         } finally {
             setIsSaving(false);
             if (success) {
@@ -174,7 +170,7 @@ export default function AdminMoviePage() {
         try {
             const ok = await deleteMovie(id);
             if (!ok) {
-                notification.error({ message: "Xóa thất bại" });
+                message.error("Xóa thất bại");
                 return;
             }
             // if current page becomes empty, go to previous page
@@ -185,16 +181,14 @@ export default function AdminMoviePage() {
             } else {
                 await loadMovies(page);
             }
-            notification.success({ message: "Xóa phim thành công" });
+            message.success("Xóa phim thành công");
         } catch (err) {
             console.error(err);
-            notification.error({ message: "Lỗi khi xóa phim" });
+            message.error("Lỗi khi xóa phim");
         } finally {
             setDeletingId(null);
         }
     };
-
-    const filteredItems = pageItems.filter((m) => !searchText.trim() || m.title.toLowerCase().includes(searchText.toLowerCase()));
 
     return (
         <div>
@@ -218,31 +212,33 @@ export default function AdminMoviePage() {
                     </div>
 
                     <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl p-4 flex flex-col md:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                            <input
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                                className="form-input w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary pl-10 h-11 focus:border-primary focus:ring-primary text-sm"
-                                placeholder="Tìm kiếm theo phim..."
-                                type="text"
-                            />
-                        </div>
-                        <div className="flex gap-3 overflow-x-auto pb-1 md:pb-0">
-                            <div className="relative min-w-[140px]">
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value as any)}
-                                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white pl-4 pr-10 py-2.5 focus:outline-none focus:border-primary cursor-pointer text-sm"
-                                >
-                                    <option value="">Tất cả trạng thái</option>
-                                    <option value="Now Showing">Đang chiếu</option>
-                                    <option value="Coming Soon">Sắp chiếu</option>
-                                    <option value="Ended">Đã đóng</option>
-                                </select>
-                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        <ConfigProvider
+                            theme={{
+                                token: {
+                                    colorBgContainer: isDarkTheme() ? "#111318" : "#f8fafc",
+                                    colorBorder: isDarkTheme() ? "#2d3748" : "#e2e8f0",
+                                },
+                                algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                            }}
+                        >
+                            <div className="flex-1">
+                                <Input
+                                    value={searchText}
+                                    onChange={(e) => setSearchText(e.target.value)}
+                                    placeholder="Tìm kiếm theo phim..."
+                                    prefix={<span className="material-symbols-outlined text-slate-400 text-[18px]">search</span>}
+                                    style={{ height: "44px" }}
+                                />
                             </div>
-                        </div>
+                            <div className="min-w-[180px]">
+                                <Select value={statusFilter} onChange={(value) => setStatusFilter(value as any)} style={{ height: "44px", width: "100%" }}>
+                                    <Select.Option value="">Tất cả trạng thái</Select.Option>
+                                    <Select.Option value="Now Showing">Đang chiếu</Select.Option>
+                                    <Select.Option value="Coming Soon">Sắp chiếu</Select.Option>
+                                    <Select.Option value="Ended">Đã đóng</Select.Option>
+                                </Select>
+                            </div>
+                        </ConfigProvider>
                     </div>
 
                     <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden shadow-xl">
@@ -261,7 +257,7 @@ export default function AdminMoviePage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                        {filteredItems.map((m) => (
+                                        {pageItems.map((m) => (
                                             <tr key={m._id} className="hover:bg-slate-50 dark:hover:bg-border-dark/50 transition-colors group">
                                                 <td className="p-4">
                                                     <div className="w-10 h-14 bg-cover bg-center rounded shadow-sm" style={{ backgroundImage: `url('${m.posterImg}')` }} />
@@ -341,44 +337,19 @@ export default function AdminMoviePage() {
 
                         <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark/50">
                             <div className="text-xs text-slate-500 dark:text-text-secondary">
-                                Hiển thị {total === 0 ? 0 : startIndex + 1}-{total === 0 ? 0 : startIndex + filteredItems.length} của {total} phim
+                                Hiển thị {total === 0 ? 0 : startIndex + 1}-{total === 0 ? 0 : startIndex + pageItems.length} của {total} phim
                             </div>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={prevPage}
-                                    aria-label="Previous page"
-                                    disabled={page === 1}
-                                    className={`size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 dark:hover:bg-border-dark hover:text-white ${
-                                        page === 1 ? "opacity-50 pointer-events-none" : ""
-                                    }`}
-                                >
-                                    <span className="material-symbols-outlined text-sm">chevron_left</span>
-                                </button>
-
-                                {getPageRange().map((p) => (
-                                    <button
-                                        key={p}
-                                        onClick={() => goToPage(p)}
-                                        aria-current={p === page ? "page" : undefined}
-                                        className={`size-8 flex items-center justify-center rounded-lg text-sm font-medium ${
-                                            p === page ? "bg-primary text-white" : "text-slate-400 hover:bg-white/10 dark:hover:bg-border-dark hover:text-white"
-                                        }`}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
-
-                                <button
-                                    onClick={nextPage}
-                                    aria-label="Next page"
-                                    disabled={page === totalPages}
-                                    className={`size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 dark:hover:bg-border-dark hover:text-white ${
-                                        page === totalPages ? "opacity-50 pointer-events-none" : ""
-                                    }`}
-                                >
-                                    <span className="material-symbols-outlined text-sm">chevron_right</span>
-                                </button>
-                            </div>
+                            <ConfigProvider
+                                theme={{
+                                    token: {
+                                        colorBgContainer: isDarkTheme() ? "#212f4d" : "#dddfe1",
+                                        colorText: isDarkTheme() ? "#fff" : "#000",
+                                    },
+                                    algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                                }}
+                            >
+                                <Pagination current={page} pageSize={pageSize} total={total} onChange={goToPage} showSizeChanger={false} />
+                            </ConfigProvider>
                         </div>
                     </div>
                 </div>

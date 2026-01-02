@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../index.css";
-import { Pagination as AntPagination, ConfigProvider, theme, notification, Spin } from "antd";
+import { Pagination as AntPagination, ConfigProvider, theme, message, Spin, Select, DatePicker } from "antd";
 import { fetchShowtimes, createShowtime, updateShowtime, deleteShowtime, type ShowtimeListItem, type Pagination as PagingInfo } from "../services/showtimeService";
 import { fetchCinemas, type Cinema } from "../services/cinemaService";
 import { fetchMovies } from "../services/movieService";
 import ShowtimeFormModal from "../components/ShowtimeFormModal";
 import { useTheme } from "../context/ThemeContext";
+import dayjs from "dayjs";
 
 type ShowtimeStatus = "upcoming" | "running" | "done";
 
@@ -13,9 +14,9 @@ const AdminShowtimePage: React.FC = () => {
     const { isDarkTheme } = useTheme();
     const [showtimes, setShowtimes] = useState<ShowtimeListItem[]>([]);
 
-    const [search, setSearch] = useState("");
     const [filterDate, setFilterDate] = useState("");
-    const [filterCinemaId, setFilterCinemaId] = useState("");
+    const [filterMovieId, setFilterMovieId] = useState("all");
+    const [filterCinemaId, setFilterCinemaId] = useState("all");
     const [cinemas, setCinemas] = useState<Cinema[]>([]);
     const [movieOptions, setMovieOptions] = useState<{ id: string; title: string }[]>([]);
 
@@ -33,7 +34,8 @@ const AdminShowtimePage: React.FC = () => {
         try {
             const filters: any = {};
             if (filterDate) filters.date = filterDate;
-            if (filterCinemaId) filters.cinemaId = filterCinemaId;
+            if (filterMovieId && filterMovieId !== "all") filters.movieId = filterMovieId;
+            if (filterCinemaId && filterCinemaId !== "all") filters.cinemaId = filterCinemaId;
 
             const { docs, pagination } = await fetchShowtimes(page, PAGE_SIZE, filters);
             setShowtimes(docs);
@@ -42,16 +44,15 @@ const AdminShowtimePage: React.FC = () => {
             console.error("Lỗi tải danh sách suất chiếu:", e);
             setShowtimes([]);
             setPaginationInfo(null);
-            notification.error({ message: "Lỗi tải danh sách suất chiếu" });
+            message.error("Lỗi tải danh sách suất chiếu");
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        // Load list from service per page (10 items per page)
         load();
-    }, [page, filterDate, filterCinemaId]);
+    }, [page, filterDate, filterMovieId, filterCinemaId]);
 
     // Fetch cinemas for the room selector
     useEffect(() => {
@@ -87,7 +88,7 @@ const AdminShowtimePage: React.FC = () => {
                 setMovieOptions(Array.from(map.values()));
             } catch (e) {
                 console.error("Lỗi tải danh sách phim:", e);
-                notification.error({ message: "Lỗi tải danh sách phim" });
+                message.error("Lỗi tải danh sách phim");
                 setMovieOptions([]);
             } finally {
                 setIsLoading(false);
@@ -141,22 +142,22 @@ const AdminShowtimePage: React.FC = () => {
                 });
                 if (updated) {
                     load();
-                    notification.success({ message: "Cập nhật suất chiếu thành công" });
+                    message.success("Cập nhật suất chiếu thành công");
                 } else {
-                    notification.error({ message: "Cập nhật suất chiếu thất bại" });
+                    message.error("Cập nhật suất chiếu thất bại");
                 }
             } else {
                 const created = await createShowtime({ movieId: s.movieId, cinemaId: s.cinemaId, startTime: s.startTime, endTime: s.endTime, price: s.price });
                 if (created) {
                     load();
-                    notification.success({ message: "Tạo suất chiếu thành công" });
+                    message.success("Tạo suất chiếu thành công");
                 } else {
-                    notification.error({ message: "Tạo suất chiếu thất bại" });
+                    message.error("Tạo suất chiếu thất bại");
                 }
             }
         } catch (error) {
             console.error("Lỗi khi lưu suất chiếu:", error);
-            notification.error({ message: "Lỗi khi lưu suất chiếu" });
+            message.error("Lỗi khi lưu suất chiếu");
         } finally {
             setIsSaving(false);
             closeModal();
@@ -170,13 +171,13 @@ const AdminShowtimePage: React.FC = () => {
             const success = await deleteShowtime(id);
             if (success) {
                 load();
-                notification.success({ message: "Xóa suất chiếu thành công" });
+                message.success("Xóa suất chiếu thành công");
             } else {
-                notification.error({ message: "Xóa suất chiếu thất bại" });
+                message.error("Xóa suất chiếu thất bại");
             }
         } catch (e) {
             console.error("Lỗi khi xóa suất chiếu:", e);
-            notification.error({ message: "Xóa suất chiếu thất bại" });
+            message.error("Xóa suất chiếu thất bại");
         } finally {
             setDeletingId(null);
         }
@@ -192,15 +193,14 @@ const AdminShowtimePage: React.FC = () => {
     }, []);
 
     const filtered = useMemo(() => {
-        const q = search.trim().toLowerCase();
         return showtimes.filter((s) => {
-            if (q && !(s.movie?.title ?? "").toLowerCase().includes(q)) return false;
             const sDate = new Date(s.startTime).toISOString().slice(0, 10);
             if (filterDate && sDate !== filterDate) return false;
-            if (filterCinemaId && s.cinema?._id !== filterCinemaId) return false;
+            if (filterMovieId && filterMovieId !== "all" && s.movie?._id !== filterMovieId) return false;
+            if (filterCinemaId && filterCinemaId !== "all" && s.cinema?._id !== filterCinemaId) return false;
             return true;
         });
-    }, [showtimes, search, filterDate, filterCinemaId]);
+    }, [showtimes, filterDate, filterMovieId, filterCinemaId]);
 
     // With server-side pagination we only have current page items in `showtimes`.
     const totalDocs = paginationInfo?.totalDocs ?? filtered.length;
@@ -275,59 +275,70 @@ const AdminShowtimePage: React.FC = () => {
                     Thêm suất chiếu
                 </button>
             </div>
-            <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-4 shadow-sm">
-                <div className="flex flex-col md:flex-row items-end gap-4">
-                    <label className="flex flex-col w-full md:flex-1">
-                        <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Tìm kiếm phim</span>
-                        <div className="relative">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-secondary text-[20px]">search</span>
-                            <input
-                                value={search}
-                                onChange={(e) => {
-                                    setSearch(e.target.value);
+            <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-4 shadow-sm flex">
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            colorBgContainer: isDarkTheme() ? "#111318" : "#f8fafc",
+                            colorBorder: isDarkTheme() ? "#2d3748" : "#e2e8f0",
+                        },
+                        algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                    }}
+                >
+                    <div className="flex flex-col md:flex-row justify-end gap-4">
+                        <label className="flex flex-col w-full md:w-48">
+                            <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Ngày chiếu</span>
+                            <DatePicker
+                                value={filterDate ? dayjs(filterDate) : null}
+                                onChange={(date) => {
+                                    setFilterDate(date ? date.format("YYYY-MM-DD") : "");
                                     setPage(1);
                                 }}
-                                className="form-input w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary pl-10 h-11 focus:border-primary focus:ring-primary text-sm"
-                                placeholder="Nhập tên phim..."
+                                placeholder="Chọn ngày"
+                                format="DD/MM/YYYY"
+                                style={{ height: "44px", width: "100%" }}
                             />
-                        </div>
-                    </label>
+                        </label>
 
-                    <label className="flex flex-col w-full md:w-48">
-                        <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Ngày chiếu</span>
-                        <input
-                            value={filterDate}
-                            onChange={(e) => {
-                                setFilterDate(e.target.value);
-                                setPage(1);
-                            }}
-                            className="form-input w-full p-4 rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white h-11 focus:border-primary focus:ring-primary text-sm"
-                            type="date"
-                        />
-                    </label>
-
-                    <label className="flex flex-col w-full md:w-48">
-                        <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Phòng chiếu</span>
-                        <div className="relative">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-secondary text-[20px]">theaters</span>
-                            <select
-                                value={filterCinemaId}
-                                onChange={(e) => {
-                                    setFilterCinemaId(e.target.value);
+                        <label className="flex flex-col w-full md:w-48">
+                            <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Phim</span>
+                            <Select
+                                value={filterMovieId}
+                                onChange={(value) => {
+                                    setFilterMovieId(value);
                                     setPage(1);
                                 }}
-                                className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white pl-10 h-11 focus:border-primary focus:ring-primary text-sm cursor-pointer"
+                                style={{ height: "44px", width: "100%" }}
                             >
-                                <option value="">Tất cả phòng</option>
-                                {cinemas.map((c) => (
-                                    <option key={c._id} value={c._id}>
-                                        {c.name}
-                                    </option>
+                                <Select.Option value="all">Tất cả phim</Select.Option>
+                                {movieOptions.map((m) => (
+                                    <Select.Option key={m.id} value={m.id}>
+                                        {m.title}
+                                    </Select.Option>
                                 ))}
-                            </select>
-                        </div>
-                    </label>
-                </div>
+                            </Select>
+                        </label>
+
+                        <label className="flex flex-col w-full md:w-48">
+                            <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Phòng chiếu</span>
+                            <Select
+                                value={filterCinemaId}
+                                onChange={(value) => {
+                                    setFilterCinemaId(value);
+                                    setPage(1);
+                                }}
+                                style={{ height: "44px", width: "100%" }}
+                            >
+                                <Select.Option value="all">Tất cả rạp chiếu</Select.Option>
+                                {cinemas.map((c) => (
+                                    <Select.Option key={c._id} value={c._id}>
+                                        {c.name}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </label>
+                    </div>
+                </ConfigProvider>
             </div>
 
             <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden">

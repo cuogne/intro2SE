@@ -13,6 +13,7 @@ import AdminMoviePage from "./pages/AdminMoviePage";
 import AdminTicketType from "./pages/AdminTicketType";
 import AdminCinemaPage from "./pages/AdminCinemaPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminPaymentPage from "./pages/AdminPaymentPage";
 
 function App() {
     return (
@@ -32,13 +33,14 @@ function App() {
                                 </AdminRoute>
                             }
                         >
-                            <Route index element={<Navigate to="ticket-types" replace />} />
+                            <Route index element={<Navigate to="movies" replace />} />
                             <Route path="cinema-rooms" element={<AdminCinemaPage />} />
                             <Route path="ticket-types" element={<AdminTicketType />} />
                             <Route path="showtimes" element={<AdminShowtimePage />} />
                             <Route path="movies" element={<AdminMoviePage />} />
                             <Route path="staff" element={<AdminStaffsPage />} />
                             <Route path="users" element={<AdminUsersPage />} />
+                            <Route path="payments" element={<AdminPaymentPage />} />
                             <Route path="logout" element={<AdminLogoutPage />} />
                         </Route>
                     </Routes>

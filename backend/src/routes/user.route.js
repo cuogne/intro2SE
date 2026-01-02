@@ -16,5 +16,6 @@ router.delete('/me', auth, userController.deleteAccount)                        
 // admin
 router.get('/all', auth, authorizeAdmin, userController.getAllAccounts)             // xem tat ca tai khoan chi co admin
 router.get('/all/:id', auth, authorizeAdmin, userController.getAccountById)         // xem 1 tai khoan theo id (admin)
+router.put('/all/:id', auth, authorizeAdmin, userController.updateUserByAdmin)      // cap nhat user (admin)
 
 module.exports = router

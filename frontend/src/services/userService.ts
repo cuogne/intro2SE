@@ -15,6 +15,6 @@ export const getAllUsers = async (): Promise<UserItem[]> => {
 };
 
 export const updateUser = async (id: string, payload: Partial<UserItem>) => {
-    const res = await api.put(`/v1/users/${id}`, payload);
+    const res = await api.put(`/v1/users/all/${id}`, payload);
     return res.data;
 };

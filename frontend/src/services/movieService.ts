@@ -39,9 +39,12 @@ const MOCK_MOVIES: Movie[] = Array.from({ length: 20 }).map((_, index) => ({
     status: index % 2 === 0 ? "now_showing" : "coming_soon",
 }));
 
-export const fetchMovies = async (status?: "Now Showing" | "Coming Soon" | "Ended", page: number = 1, limit: number = 10): Promise<MovieListResponse> => {
+export const fetchMovies = async (status?: "Now Showing" | "Coming Soon" | "Ended", page: number = 1, limit: number = 10, search?: string): Promise<MovieListResponse> => {
     try {
         const params: Record<string, any> = { page, limit };
+        if (search) {
+            params.search = search;
+        }
         let normalizedStatus: MovieStatus | undefined;
         if (status) {
             normalizedStatus = status === "Now Showing" ? "now_showing" : status === "Coming Soon" ? "coming_soon" : "ended";
