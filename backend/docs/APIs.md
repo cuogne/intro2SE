@@ -113,8 +113,8 @@ headers: {
   status: 'pending' | 'confirmed' | 'cancelled';
   holdExpiresAt: Date;    // Thời gian hết hạn giữ ghế (chỉ có khi status = 'pending')
   paidAt: Date;           // Thời gian thanh toán (chỉ có khi status = 'confirmed')
-  paymentProvider: string; // 'zalopay'
-  paymentTransId: string; // Transaction ID từ Zalopay
+  paymentProvider: string; // 'zalopay' | 'momo'
+  paymentTransId: string; // Transaction ID từ payment provider
   paymentMeta: object;    // Metadata thanh toán
   bookedAt: Date;
 }
@@ -180,8 +180,10 @@ headers: {
 ### Payment APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | [`/api/v1/payments`](#71-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
-| POST | [`/api/v1/payments/callback`](#72-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
+| POST | [`/api/v1/payments/zalopay`](#71-tạo-order-thanh-toán-zalopay) | Tạo order thanh toán Zalopay từ booking | Login |
+| POST | [`/api/v1/payments/zalopay/callback`](#72-callback-từ-zalopay) | Callback từ Zalopay (Zalopay tự động gọi) | No |
+| POST | [`/api/v1/payments/momo`](#73-tạo-order-thanh-toán-momo) | Tạo order thanh toán Momo từ booking | Login |
+| POST | [`/api/v1/payments/momo/callback`](#74-callback-từ-momo) | Callback từ Momo (Momo tự động gọi) | No |
 
 ### 1. Authentication APIs
 
@@ -1289,7 +1291,7 @@ GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=50
 
 #### 7.1. Tạo order thanh toán Zalopay
 
-**Endpoint:** `POST /api/v1/payments`
+**Endpoint:** `POST /api/v1/payments/zalopay`
 
 **Authentication:** Required
 
@@ -1326,7 +1328,7 @@ GET /api/v1/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=50
 
 #### 7.2. Callback từ Zalopay
 
-**Endpoint:** `POST /api/v1/payments/callback`
+**Endpoint:** `POST /api/v1/payments/zalopay/callback`
 
 **Authentication:** Không cần (Zalopay tự động gọi, không cần code để gọi tới API này)
 
@@ -1360,6 +1362,131 @@ ngrok http 3000
 Tài khoản Zalopay Sandbox để test chuyển khoản VISA: 4111 1111 1111 1111
 
 AE có thể đọc thêm doc của Zalopay tại đây: https://developers.zalopay.vn/v2/general/overview.html
+
+---
+
+#### 7.3. Tạo order thanh toán Momo
+
+**Endpoint:** `POST /api/v1/payments/momo`
+
+**Authentication:** Required
+
+**Mô tả:** Tạo order thanh toán Momo từ booking. Booking phải có status `pending` và còn hiệu lực (chưa hết hạn 5 phút).
+
+**Lưu ý:** Khi user ấn thanh toán, chỉ cần gửi `bookingId`. Backend sẽ tự động lấy toàn bộ ghế từ booking để tạo order thanh toán Momo.
+
+**Request Body:**
+```json
+{
+  "bookingId": "507f1f77bcf86cd799439014"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "partnerCode": "MOMO",
+  "orderId": "MOMO1767354253392",
+  "requestId": "MOMO1767354253392",
+  "amount": 30000,
+  "responseTime": 1767354253904,
+  "message": "Thành công.",
+  "resultCode": 0,
+  "payUrl": "https://test-payment.momo.vn/v2/gateway/pay?t=TU9NT3xNT01PMTc2NzM1NDI1MzM5Mg&s=e751e568ba8ed9aa492a8d1fcaaf8cf1957996ec17b4003b3422c874930376be"
+}
+```
+
+**Response (400 Bad Request) - Booking đã hết hạn:**
+```json
+{
+  "success": false,
+  "message": "Error creating Momo payment order",
+  "error": "Booking has expired. Please select seats again."
+}
+```
+
+**Response (400 Bad Request) - Booking đã thanh toán:**
+```json
+{
+  "success": false,
+  "message": "Error creating Momo payment order",
+  "error": "Booking already paid"
+}
+```
+
+**Lưu ý:**
+- Nếu booking đã hết hạn (quá 5 phút), sẽ trả về lỗi và không tạo được order thanh toán
+- Frontend có thể sử dụng `payUrl` để redirect người dùng đến trang thanh toán Momo
+- Hoặc sử dụng `qrCodeUrl` để hiển thị QR code cho người dùng quét
+- Hoặc sử dụng `deeplink` để mở app Momo trên mobile
+
+---
+
+#### 7.4. Callback từ Momo
+
+**Endpoint:** `POST /api/v1/payments/momo/callback`
+
+**Authentication:** Không cần (Momo tự động gọi, không cần code để gọi tới API này)
+
+**Mô tả:** Endpoint này được Momo tự động gọi sau khi thanh toán thành công hoặc thất bại. Backend sẽ tự động cập nhật booking status thành `confirmed` nếu thanh toán thành công.
+
+**Request Body (từ Momo):**
+```json
+{
+  "partnerCode": "MOMO",
+  "orderId": "MOMO1712108682648",
+  "requestId": "MOMO1712108682648",
+  "amount": 90000,
+  "orderInfo": "Thanh toán vé xem phim - Inception tại Cinemax Sinh Viên",
+  "orderType": "momo_wallet",
+  "transId": 4014083433,
+  "resultCode": 0,
+  "message": "Thành công.",
+  "payType": "qr",
+  "responseTime": 1712108811069,
+  "extraData": "",
+  "signature": "10398fbe70cd3052f443da99f7c4befbf49ab0d0c6cd7dc14efffd6e09a526c0"
+}
+```
+
+**Response (204 No Content) - Thành công:**
+```
+Status: 204 No Content
+```
+
+**Response (200 OK) - Lỗi:**
+```json
+{
+  "resultCode": -1,
+  "message": "Error message"
+}
+```
+
+**Lưu ý:** 
+- Frontend không cần gọi API này. Đây là webhook từ Momo.
+- `resultCode = 0`: Giao dịch thành công
+- `resultCode = 9000`: Giao dịch được cấp quyền (authorization) thành công
+- `resultCode <> 0`: Giao dịch thất bại
+
+**Để chạy được:**
+1. Cài `ngrok` [https://ngrok.com/] và lấy token
+2. Chạy: `ngrok http 3000`
+3. Lấy URL từ ngrok và dán vào `.env` ở `MOMO_CALLBACK_URL` hoặc `MOMO_IPN_URL`
+4. Cấu hình `MOMO_REDIRECT_URL` trong `.env` để chuyển hướng người dùng đến trang thanh toán thành công
+
+**Environment Variables cần thiết:**
+```env
+MOMO_ACCESS_KEY=your_access_key
+MOMO_SECRET_KEY=your_secret_key
+MOMO_PARTNER_CODE=MOMO
+MOMO_CALLBACK_URL=https://your-ngrok-url/api/v1/payments/momo/callback
+MOMO_REDIRECT_URL=http://localhost:3000
+```
+
+**Tài khoản Momo Sandbox để test:**
+- Sử dụng tài khoản Momo test từ [Momo Developer Portal](https://developers.momo.vn/)
+
+AE có thể đọc thêm doc của Momo tại đây: https://developers.momo.vn/
 
 ---
 

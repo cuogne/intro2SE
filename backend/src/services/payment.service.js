@@ -1,6 +1,7 @@
 const CryptoJS = require('crypto-js');
 const moment = require('moment'); // npm install moment
 const zalopayConfig = require('../config/zalopay.config');
+const momoConfig = require('../config/momo.config');
 const Booking = require('../models/booking.model');
 const axios = require('axios');
 require('dotenv').config();
@@ -16,6 +17,22 @@ const createMac = (data, key1) => {
 
     return CryptoJS.HmacSHA256(dataString, key1).toString();
 };
+
+const createMomoSignature = (accessKey, amount, extraData, ipnUrl, orderId, orderInfo, partnerCode, redirectUrl, requestId, requestType, secretKey) => {
+    const rawSignature =
+        'accessKey=' + accessKey +
+        '&amount=' + amount +
+        '&extraData=' + extraData +
+        '&ipnUrl=' + ipnUrl +
+        '&orderId=' + orderId +
+        '&orderInfo=' + orderInfo +
+        '&partnerCode=' + partnerCode +
+        '&redirectUrl=' + redirectUrl +
+        '&requestId=' + requestId +
+        '&requestType=' + requestType;
+
+    return CryptoJS.HmacSHA256(rawSignature, secretKey).toString(CryptoJS.enc.Hex);
+}
 
 // Tạo order Zalopay từ booking
 const createZalopayOrder = async (bookingId) => {
@@ -112,6 +129,85 @@ const createZalopayOrder = async (bookingId) => {
     }
 };
 
+const createMomoOrder = async (bookingId) => {
+    const booking = await Booking.findById(bookingId)
+        .populate({
+            path: 'showtime',
+            select: 'startTime price',
+            populate: [
+                { path: 'movie', select: 'title' },
+                { path: 'cinema', select: 'name' }
+            ]
+        })
+        .populate('user', 'username');
+
+    if (!booking) throw new Error('Booking not found');
+    if (booking.status === 'confirmed') throw new Error('Booking already paid');
+
+    // Create Momo Order
+    const partnerCode = momoConfig.partnerCode;
+    const accessKey = momoConfig.accessKey;
+    const secretKey = momoConfig.secretKey;
+    const requestId = partnerCode + new Date().getTime();
+    const orderId = requestId;
+    const orderInfo = `Thanh toán vé ${booking.showtime.movie.title}`;
+    const redirectUrl = momoConfig.redirectUrl;
+    const ipnUrl = momoConfig.ipnUrl;
+    const amount = booking.totalPrice; // Number
+    const requestType = momoConfig.requestType;
+    const extraData = momoConfig.extraData;
+    const lang = 'vi';
+
+    const signature = createMomoSignature(
+        accessKey, amount.toString(), extraData, ipnUrl, orderId, orderInfo,
+        partnerCode, redirectUrl, requestId, requestType, secretKey
+    );
+
+    const requestBody = {
+        partnerCode: partnerCode,
+        partnerName: "Test",
+        storeId: "MomoTestStore",
+        requestId: requestId,
+        amount: amount, // Send as Number
+        orderId: orderId,
+        orderInfo: orderInfo,
+        redirectUrl: redirectUrl,
+        ipnUrl: ipnUrl,
+        lang: lang,
+        requestType: requestType,
+        autoCapture: momoConfig.autoCapture,
+        extraData: extraData,
+        orderGroupId: momoConfig.orderGroupId,
+        signature: signature
+    };
+
+    try {
+        const result = await axios.post('https://test-payment.momo.vn/v2/gateway/api/create', requestBody, {
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (result.data && result.data.resultCode === 0) {
+            booking.paymentTransId = orderId;
+            booking.paymentProvider = 'momo';
+            booking.paymentMeta = {
+                requestId: requestId,
+                payUrl: result.data.payUrl
+            };
+            await booking.save();
+        }
+
+        return result.data;
+    } catch (error) {
+        if (error.response) {
+            console.error('Momo API Error Response:', error.response.data);
+            throw new Error(`Error creating Momo order: ${JSON.stringify(error.response.data)}`);
+        }
+        throw new Error('Error creating Momo order: ' + error.message);
+    }
+};
+
 const handleCallback = async (dataStr, reqMac) => {
     try {
         let mac = CryptoJS.HmacSHA256(dataStr, zalopayConfig.key2).toString();
@@ -177,7 +273,56 @@ const handleCallback = async (dataStr, reqMac) => {
     }
 };
 
+
+const handleMomoCallback = async (callbackData) => {
+    try {
+        const {
+            partnerCode, orderId, requestId, amount, orderInfo,
+            orderType, transId, resultCode, message, payType,
+            responseTime, extraData, signature
+        } = callbackData;
+
+        // Verify signature
+        const accessKey = momoConfig.accessKey;
+        const secretKey = momoConfig.secretKey;
+        const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
+
+        const generatedSignature = CryptoJS.HmacSHA256(rawSignature, secretKey).toString(CryptoJS.enc.Hex);
+
+        if (signature !== generatedSignature) {
+            console.error('Invalid Momo signature');
+            return { statusCode: 400, message: "Invalid signature" };
+        }
+
+        if (resultCode === 0) {
+            const booking = await Booking.findOne({ paymentTransId: orderId });
+            if (!booking) {
+                return { statusCode: 404, message: 'Booking not found' };
+            }
+
+            if (booking.status !== 'confirmed') {
+                booking.status = 'confirmed';
+                booking.paidAt = new Date();
+                booking.paymentMeta = {
+                    ...booking.paymentMeta,
+                    provider: 'MOMO',
+                    momoTransId: transId,
+                    callbackTime: new Date()
+                };
+                await booking.save();
+            }
+        }
+
+        return { statusCode: 204 };
+    } catch (error) {
+        console.error('Momo callback error:', error);
+        return { statusCode: 500, message: error.message };
+    }
+};
+
 module.exports = {
     createZalopayOrder,
-    handleCallback
+    handleCallback,
+    createMomoOrder,
+    handleMomoCallback
 };

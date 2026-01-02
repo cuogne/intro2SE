@@ -3,13 +3,12 @@ const router = express.Router();
 const paymentController = require('../controllers/payment.controller');
 const auth = require('../middleware/auth.middleware');
 
-// ta o order thanh toan Zalopay (can login)
-router.post('/', auth, paymentController.createOrder);
+// zalopay
+router.post('/zalopay', auth, paymentController.createZalopayOrder);
+router.post('/zalopay/callback', paymentController.handleZalopayCallback);
 
-// callback tu Zalopay (thanh toan xong tu dong goi ve)
-router.post('/callback', paymentController.handleCallback);
-
-// Kiểm tra trạng thái thanh toán (cần login)
-// router.get('/status/:bookingId', auth, paymentController.getPaymentStatus);
+// momo
+router.post('/momo', auth, paymentController.createMoMoOrder);
+router.post('/momo/callback', paymentController.handleMoMoCallback);
 
 module.exports = router;

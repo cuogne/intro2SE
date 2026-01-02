@@ -1,4 +1,4 @@
-@baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
+# @baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
 @baseUrl = http://localhost:3000/api
 
 ### Đăng nhập
@@ -43,7 +43,7 @@ Content-Type: application/json
   "seats": [
     { 
       "row": "A", 
-      "number": 1 
+      "number": 2
     }
   ]
 }
@@ -102,7 +102,7 @@ Content-Type: application/json
 
 ### Tạo order thanh toán Zalopay dựa theo booking trên
 # @name makePayment
-POST {{baseUrl}}/v1/payments
+POST {{baseUrl}}/v1/payments/zalopay
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
@@ -113,3 +113,13 @@ Content-Type: application/json
 ### Kiểm tra booking sau thanh toán (status = 'confirmed')
 GET {{baseUrl}}/v1/bookings/{{bookingId}}
 Authorization: Bearer {{authToken}}
+
+### Tạo order thanh toán Momo dựa theo booking trên
+# @name makePayment
+POST {{baseUrl}}/v1/payments/momo
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "bookingId": "{{bookingId}}"
+}
