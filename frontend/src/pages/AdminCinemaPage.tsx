@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import "../index.css";
-import RoomEditor from "../components/RoomEditor";
+import CinemaEditor from "../components/CinemaEditor";
 import { fetchCinemas, createCinema, updateCinema, deleteCinema } from "../services/cinemaService";
 import type { Cinema } from "../services/cinemaService";
-import { notification } from "antd";
+import { notification, Input, Select, ConfigProvider, theme } from "antd";
+import { useTheme } from "../context/ThemeContext";
 
 // Helpers to map backend values to Vietnamese labels
 const mapType = (type?: string) => {
@@ -30,6 +31,7 @@ export default function AdminCinemaPage() {
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [editorOpen, setEditorOpen] = useState(false);
     const [editorInitial, setEditorInitial] = useState<Cinema | null>(null);
+    const { isDarkTheme } = useTheme();
 
     useEffect(() => {
         // Load cinemas from backend service
@@ -152,39 +154,44 @@ export default function AdminCinemaPage() {
             </div>
 
             <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-4 shadow-sm">
-                <div className="flex flex-col md:flex-row items-end gap-4">
-                    <label className="flex flex-col w-full md:flex-1">
-                        <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Tìm kiếm rạp</span>
-                        <div className="relative">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-secondary text-[20px]">search</span>
-                            <input
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            colorBgContainer: isDarkTheme() ? "#111318" : "#f8fafc",
+                            colorText: isDarkTheme() ? "#fff" : "#000",
+                            colorBorder: isDarkTheme() ? "#2d3748" : "#e2e8f0",
+                        },
+                        algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                    }}
+                >
+                    <div className="flex flex-col md:flex-row items-end gap-4">
+                        <div className="flex flex-col w-full md:flex-1">
+                            <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Tìm kiếm rạp</span>
+                            <Input
+                                placeholder="Nhập tên rạp hoặc mã..."
+                                prefix={<span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                className="form-input w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary pl-10 h-11 focus:border-primary focus:ring-primary text-sm"
-                                placeholder="Nhập tên rạp hoặc mã..."
-                                aria-label="Tìm kiếm rạp"
+                                style={{ height: "44px" }}
                             />
                         </div>
-                    </label>
 
-                    <label className="flex flex-col w-full md:w-64">
-                        <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Trạng thái</span>
-                        <div className="relative">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-secondary text-[20px]">filter_list</span>
-                            <select
+                        <div className="flex flex-col w-full md:w-64">
+                            <span className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Trạng thái</span>
+                            <Select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] text-slate-900 dark:text-white pl-10 h-11 focus:border-primary focus:ring-primary text-sm cursor-pointer"
-                                aria-label="Trạng thái"
-                            >
-                                <option value="all">Tất cả trạng thái</option>
-                                <option value="open">Hoạt động</option>
-                                <option value="renovating">Đang nâng cấp</option>
-                                <option value="closed">Đã đóng</option>
-                            </select>
+                                onChange={(value) => setStatusFilter(value)}
+                                style={{ height: "44px" }}
+                                options={[
+                                    { value: "all", label: "Tất cả trạng thái" },
+                                    { value: "open", label: "Hoạt động" },
+                                    { value: "renovating", label: "Đang nâng cấp" },
+                                    { value: "closed", label: "Đã đóng" },
+                                ]}
+                            />
                         </div>
-                    </label>
-                </div>
+                    </div>
+                </ConfigProvider>
             </div>
 
             <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden">
@@ -285,7 +292,7 @@ export default function AdminCinemaPage() {
                     <div className="text-sm text-slate-500 dark:text-text-secondary">Hiển thị {total} rạp</div>
                 </div>
             </div>
-            <RoomEditor open={editorOpen} initial={editorInitial} onClose={() => setEditorOpen(false)} onSave={handleSaveRoom} />
+            <CinemaEditor open={editorOpen} initial={editorInitial} onClose={() => setEditorOpen(false)} onSave={handleSaveRoom} />
         </div>
     );
 }

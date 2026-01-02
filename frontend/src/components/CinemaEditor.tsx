@@ -19,16 +19,17 @@ type Props = {
     onSave: (payload: Partial<Cinema>) => void;
 };
 
-const DEFAULT_ROWS = 7;
+const DEFAULT_ROWS = 5;
+const DEFAULT_COLS = 7;
 
 function padCol(n: number) {
     return String(n);
 }
 
-export default function RoomEditor({ open, initial = null, onClose, onSave }: Props) {
+export default function CinemaEditor({ open, initial = null, onClose, onSave }: Props) {
     const [name, setName] = useState(initial?.name ?? "");
     const [address, setAddress] = useState(initial?.address ?? "");
-    const [cols, setCols] = useState<number>(initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? 10);
+    const [cols, setCols] = useState<number>(initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? DEFAULT_COLS);
     const [seatStates, setSeatStates] = useState<Record<string, SeatState>>({});
     const [rowsCount, setRowsCount] = useState<number>(initial?.rows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS);
     const [status, setStatus] = useState<string>(initial?.status ?? "open");
@@ -39,7 +40,7 @@ export default function RoomEditor({ open, initial = null, onClose, onSave }: Pr
         setAddress(initial?.address ?? "");
 
         const initialRows = initial?.rows ?? initial?.seatLayout?.length ?? DEFAULT_ROWS;
-        const initialCols = initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? 12;
+        const initialCols = initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? DEFAULT_COLS;
 
         setCols(initialCols);
         setRowsCount(initialRows);
