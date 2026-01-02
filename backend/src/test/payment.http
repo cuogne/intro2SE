@@ -1,5 +1,5 @@
-# @baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
-@baseUrl = http://localhost:3000/api
+@baseUrl = https://tyron-ungradated-tina.ngrok-free.dev/api
+# @baseUrl = http://localhost:3000/api
 
 ### Đăng nhập
 # @name loginRequest
@@ -62,7 +62,7 @@ Content-Type: application/json
   "seats": [
     { 
       "row": "A", 
-      "number": 2 
+      "number": 1
     }
   ]
 }
@@ -79,7 +79,7 @@ Content-Type: application/json
   "seats": [
     { 
       "row": "A", 
-      "number": 2 
+      "number": 1 
     }
   ]
 }
@@ -95,7 +95,7 @@ Content-Type: application/json
   "seats": [
     { 
       "row": "A", 
-      "number": 2 
+      "number": 1 
     }
   ]
 }

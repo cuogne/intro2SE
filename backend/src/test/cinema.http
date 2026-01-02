@@ -27,8 +27,10 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-    "name": "Cinemax Quận 1",
-    "address": "Quận 1, Thành phố Hồ Chí Minh",
-    "rows": 5,
-    "columns": 5
+    "name": "Cinemax HCMUS",
+    "address": "Trường Đại học Khoa học Tự nhiên, Đại học Quốc gia TP.HCM",
+    "status": "open",
+    "type": "imax",
+    "rows": 7,
+    "columns": 8
 }
