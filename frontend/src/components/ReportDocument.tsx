@@ -128,7 +128,7 @@ export const ReportDocument = ({ statistics, filters }: ReportDocumentProps) => 
             <Page size="A4" style={styles.page}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.title}>BÁO CÁO GIAO DỊCH VÀ DOANH THU</Text>
+                    <Text style={styles.title}>BÁO CÁO DOANH THU</Text>
                     <Text style={styles.subtitle}>
                         Ngày xuất: {new Date().toLocaleDateString("vi-VN")} {new Date().toLocaleTimeString("vi-VN")}
                     </Text>
