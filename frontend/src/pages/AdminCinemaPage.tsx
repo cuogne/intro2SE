@@ -3,7 +3,7 @@ import "../index.css";
 import CinemaEditor from "../components/CinemaEditor";
 import { fetchCinemas, createCinema, updateCinema, deleteCinema } from "../services/cinemaService";
 import type { Cinema } from "../services/cinemaService";
-import { notification, Input, Select, ConfigProvider, theme } from "antd";
+import { message, Input, Select, ConfigProvider, theme } from "antd";
 import { useTheme } from "../context/ThemeContext";
 
 // Helpers to map backend values to Vietnamese labels
@@ -36,15 +36,12 @@ export default function AdminCinemaPage() {
     useEffect(() => {
         // Load cinemas from backend service
         const load = async () => {
-            const KEY = "load-cinemas";
-            notification.open({ key: KEY, message: "Đang tải rạp...", description: "Vui lòng chờ", duration: 0 });
             try {
                 const data = await fetchCinemas();
                 setCinemas(data);
-                notification.destroy(KEY);
             } catch (error: any) {
                 console.error(error);
-                notification.error({ key: KEY, message: "Lỗi khi tải rạp", description: error?.message ?? String(error) });
+                message.error("Lỗi khi tải rạp");
             }
         };
         load();
@@ -89,42 +86,44 @@ export default function AdminCinemaPage() {
         if (!c) return; // no-op
         const confirmed = window.confirm(`Xác nhận xóa rạp "${c.name}"? Hành động này không thể hoàn tác.`);
         if (!confirmed) return;
-        const KEY = `delete-${_id}`;
-        notification.open({ key: KEY, message: `Đang xóa rạp "${c.name}"...`, duration: 0 });
+        const hide = message.loading(`Đang xóa rạp "${c.name}"...`, 0);
         try {
             const ok = await deleteCinema(_id);
+            hide();
             if (ok) {
-                notification.success({ key: KEY, message: "Xóa rạp thành công" });
+                message.success("Xóa rạp thành công");
                 const data = await fetchCinemas();
                 setCinemas(data);
             } else {
-                notification.error({ key: KEY, message: "Không thể xóa rạp" });
+                message.error("Không thể xóa rạp");
             }
         } catch (e: any) {
+            hide();
             console.error(e);
-            notification.error({ key: KEY, message: "Lỗi khi xóa rạp", description: e?.message ?? String(e) });
+            message.error("Lỗi khi xóa rạp");
         }
     };
 
     // Refresh button and handler removed — list is refreshed after create/update/delete operations.
 
     async function handleSaveRoom(payload: Partial<Cinema>) {
-        const KEY = payload._id ? `update-${payload._id}` : `create-temp`;
-        notification.open({ key: KEY, message: payload._id ? "Đang cập nhật rạp..." : "Đang tạo rạp...", duration: 0 });
+        const hide = message.loading(payload._id ? "Đang cập nhật rạp..." : "Đang tạo rạp...", 0);
         try {
             if (payload._id) {
                 const res = await updateCinema(payload._id, payload);
+                hide();
                 if (res) {
-                    notification.success({ key: KEY, message: "Cập nhật rạp thành công" });
+                    message.success("Cập nhật rạp thành công");
                 } else {
-                    notification.error({ key: KEY, message: "Cập nhật thất bại" });
+                    message.error("Cập nhật thất bại");
                 }
             } else {
                 const res = await createCinema(payload);
+                hide();
                 if (res) {
-                    notification.success({ key: KEY, message: "Tạo rạp thành công" });
+                    message.success("Tạo rạp thành công");
                 } else {
-                    notification.error({ key: KEY, message: "Tạo rạp thất bại" });
+                    message.error("Tạo rạp thất bại");
                 }
             }
             const data = await fetchCinemas();
@@ -132,8 +131,9 @@ export default function AdminCinemaPage() {
             setEditorOpen(false);
             setEditorInitial(null);
         } catch (e: any) {
+            hide();
             console.error(e);
-            notification.error({ key: KEY, message: "Lỗi khi lưu rạp", description: e?.message ?? String(e) });
+            message.error("Lỗi khi lưu rạp");
         }
     }
 

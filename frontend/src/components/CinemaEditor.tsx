@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { Input, InputNumber, Select, Button, ConfigProvider, theme } from "antd";
+import { useTheme } from "../context/ThemeContext";
+import type { Cinema } from "../services/cinemaService";
 
 // seats have boolean availability: true = available, false = unavailable
 type SeatState = boolean;
@@ -7,10 +10,6 @@ interface RowLayout {
     row: string;
     seats: string[];
 }
-
-import type { Cinema } from "../services/cinemaService";
-
-// RoomEditor uses the `Cinema` model for initial and save payloads
 
 type Props = {
     open: boolean;
@@ -27,6 +26,7 @@ function padCol(n: number) {
 }
 
 export default function CinemaEditor({ open, initial = null, onClose, onSave }: Props) {
+    const { isDarkTheme } = useTheme();
     const [name, setName] = useState(initial?.name ?? "");
     const [address, setAddress] = useState(initial?.address ?? "");
     const [cols, setCols] = useState<number>(initial?.columns ?? initial?.seatLayout?.[0]?.seats.length ?? DEFAULT_COLS);
@@ -139,137 +139,111 @@ export default function CinemaEditor({ open, initial = null, onClose, onSave }: 
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="">
-                        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Tên rạp</label>
-                        <input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full form-input rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary px-4 py-2.5 focus:border-primary focus:ring-primary"
-                            placeholder="Rạp IMAX"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Địa chỉ</label>
-                        <input
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            className="w-full form-input rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-text-secondary px-4 py-2.5 focus:border-primary focus:ring-primary"
-                            placeholder="Địa chỉ rạp"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Loại phòng</label>
-                        <select
-                            value={type}
-                            onChange={(e) => setType(e.target.value)}
-                            className="w-full form-select rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white px-3 py-2"
-                        >
-                            <option value="2dstandard">2D Tiêu chuẩn</option>
-                            <option value="3dvip">3D VIP</option>
-                            <option value="imax">IMAX</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="mb-4 grid gap-4 items-end grid-cols-[auto_auto_auto_1fr]">
-                    <div className="max-w-30 flex flex-col">
-                        <label className="text-sm text-slate-700 dark:text-slate-300 mb-1">Số hàng</label>
-                        <input
-                            type="number"
-                            min={0}
-                            max={20}
-                            value={rowsCount}
-                            onChange={(e) => setRowsCount(Number(e.target.value))}
-                            className="form-input w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white px-3 py-2 focus:border-primary focus:ring-primary"
-                        />
-                    </div>
-
-                    <div className="max-w-30 flex flex-col">
-                        <label className="text-sm text-slate-700 dark:text-slate-300 mb-1">Số cột</label>
-                        <input
-                            type="number"
-                            min={0}
-                            max={20}
-                            value={cols}
-                            onChange={(e) => setCols(Number(e.target.value))}
-                            className="form-input w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white px-3 py-2 focus:border-primary focus:ring-primary"
-                        />
-                    </div>
-
-                    <div className="max-w-50 flex flex-col">
-                        <label className="text-sm text-slate-700 dark:text-slate-300 mb-1">Trạng thái</label>
-                        <select
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value as any)}
-                            className="form-select w-full rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-white px-3 py-2 focus:border-primary focus:ring-primary"
-                        >
-                            <option value="open">Hoạt động</option>
-                            <option value="renovating">Đang nâng cấp</option>
-                            <option value="closed">Đã đóng</option>
-                        </select>
-                    </div>
-
-                    <div className="col-span-3 md:col-span-1 text-sm text-slate-500 md:text-right">
-                        Tổng ghế: {totalSeats} | <span className="text-emerald-600 dark:text-emerald-400">Có sẵn: {availableSeats}</span> |{" "}
-                        <span className="text-slate-500 dark:text-slate-400">Không khả dụng: {unavailableSeats}</span>
-                    </div>
-                </div>
-
-                <div className="mb-4">
-                    <div className="overflow-auto p-3 flex justify-center border rounded-lg bg-slate-50 dark:bg-background-dark border-slate-200 dark:border-border-dark">
-                        <div
-                            className="inline-grid gap-2"
-                            style={{
-                                gridTemplateColumns: `repeat(${clampedCols}, minmax(40px, 1fr))`,
-                            }}
-                        >
-                            {ROWS.map((r) => (
-                                <div key={r} className="contents">
-                                    {Array.from({ length: clampedCols }).map((_, i) => {
-                                        const id = `${r}${padCol(i + 1)}`;
-                                        const available = seatStates[id] ?? true;
-                                        const bg = available ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-300";
-                                        return (
-                                            <button
-                                                key={id}
-                                                title={`${id} — ${available ? "Có sẵn" : "Không khả dụng"}`}
-                                                onClick={() => toggleState(id)}
-                                                onContextMenu={(e) => {
-                                                    e.preventDefault();
-                                                    toggleState(id);
-                                                }}
-                                                className={`p-2 rounded text-xs border ${bg} border-slate-200 hover:scale-105 transition-transform`}
-                                            >
-                                                {id}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            ))}
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            colorBgContainer: isDarkTheme() ? "#111318" : "#f8fafc",
+                            colorBorder: isDarkTheme() ? "#2d3748" : "#e2e8f0",
+                        },
+                        algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                    }}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="">
+                            <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Tên rạp</label>
+                            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Rạp IMAX" style={{ height: "44px" }} />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Địa chỉ</label>
+                            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Địa chỉ rạp" style={{ height: "44px" }} />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">Loại phòng</label>
+                            <Select value={type} onChange={(value) => setType(value)} style={{ height: "44px", width: "100%" }}>
+                                <Select.Option value="2dstandard">2D Tiêu chuẩn</Select.Option>
+                                <Select.Option value="3dvip">3D VIP</Select.Option>
+                                <Select.Option value="imax">IMAX</Select.Option>
+                            </Select>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex items-center justify-end gap-3 mt-3">
-                    {(nameMissing || addressMissing || noSeats) && (
-                        <div className="mt-2 text-xs text-rose-600 dark:text-rose-400 justify-start mr-auto">
-                            {nameMissing && <div>Tên rạp không được để trống.</div>}
-                            {addressMissing && <div>Địa chỉ rạp không được để trống.</div>}
-                            {noSeats && <div>Số hàng và số cột phải lớn hơn 0.</div>}
+                    <div className="mb-4 grid gap-4 items-end grid-cols-[auto_auto_auto_1fr]">
+                        <div className="max-w-20 flex flex-col">
+                            <label className="text-sm text-slate-700 dark:text-slate-300 mb-1">Số hàng</label>
+                            <InputNumber min={0} max={20} value={rowsCount} onChange={(val) => setRowsCount(val ?? 0)} style={{ height: "44px", width: "100%" }} />
                         </div>
-                    )}
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg border">
-                        Hủy
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaveDisabled}
-                        className={`px-4 py-2 rounded-lg bg-primary text-white ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-800"}`}
-                    >
-                        Lưu phòng
-                    </button>
-                </div>
+
+                        <div className="max-w-20 flex flex-col">
+                            <label className="text-sm text-slate-700 dark:text-slate-300 mb-1">Số cột</label>
+                            <InputNumber min={0} max={20} value={cols} onChange={(val) => setCols(val ?? 0)} style={{ height: "44px", width: "100%" }} />
+                        </div>
+
+                        <div className="w-40 flex flex-col">
+                            <label className="text-sm text-slate-700 dark:text-slate-300 mb-1">Trạng thái</label>
+                            <Select value={status} onChange={(value) => setStatus(value)} style={{ height: "44px", width: "100%" }}>
+                                <Select.Option value="open">Hoạt động</Select.Option>
+                                <Select.Option value="renovating">Đang nâng cấp</Select.Option>
+                                <Select.Option value="closed">Đã đóng</Select.Option>
+                            </Select>
+                        </div>
+
+                        <div className="col-span-3 md:col-span-1 text-sm text-slate-500 md:text-right">
+                            Tổng ghế: {totalSeats} | <span className="text-emerald-600 dark:text-emerald-400">Có sẵn: {availableSeats}</span> |{" "}
+                            <span className="text-slate-500 dark:text-slate-400">Không khả dụng: {unavailableSeats}</span>
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <div className="overflow-auto p-3 flex justify-center border rounded-lg bg-slate-50 dark:bg-background-dark border-slate-200 dark:border-border-dark">
+                            <div
+                                className="inline-grid gap-2"
+                                style={{
+                                    gridTemplateColumns: `repeat(${clampedCols}, minmax(40px, 1fr))`,
+                                }}
+                            >
+                                {ROWS.map((r) => (
+                                    <div key={r} className="contents">
+                                        {Array.from({ length: clampedCols }).map((_, i) => {
+                                            const id = `${r}${padCol(i + 1)}`;
+                                            const available = seatStates[id] ?? true;
+                                            const bg = available ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-300";
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    title={`${id} — ${available ? "Có sẵn" : "Không khả dụng"}`}
+                                                    onClick={() => toggleState(id)}
+                                                    onContextMenu={(e) => {
+                                                        e.preventDefault();
+                                                        toggleState(id);
+                                                    }}
+                                                    className={`p-2 rounded text-xs border ${bg} border-slate-200 hover:scale-105 transition-transform`}
+                                                >
+                                                    {id}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 mt-3">
+                        {(nameMissing || addressMissing || noSeats) && (
+                            <div className="mt-2 text-xs text-rose-600 dark:text-rose-400 justify-start mr-auto">
+                                {nameMissing && <div>Tên rạp không được để trống.</div>}
+                                {addressMissing && <div>Địa chỉ rạp không được để trống.</div>}
+                                {noSeats && <div>Số hàng và số cột phải lớn hơn 0.</div>}
+                            </div>
+                        )}
+                        <Button onClick={onClose} size="large">
+                            Hủy
+                        </Button>
+                        <Button type="primary" onClick={handleSave} disabled={isSaveDisabled} size="large">
+                            Lưu phòng
+                        </Button>
+                    </div>
+                </ConfigProvider>
             </div>
         </div>
     );
