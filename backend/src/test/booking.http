@@ -1,0 +1,52 @@
+@baseUrl = http://localhost:4000/api/v1
+@baseLogin = http://localhost:4000/api
+
+### Login
+# @name loginRequest
+POST {{baseLogin}}/auth/login
+Content-Type: application/json
+
+{
+  // tai khoan admin
+  "username": "taolaadmin",
+  "password": "admin123"
+}
+
+### luu token vao bien
+@authToken = {{loginRequest.response.body.$.data.token}}
+
+### get all bookings
+# @name getAllBookings
+GET {{baseUrl}}/bookings/all
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### get total revenue
+# @name getTotalRevenue
+GET {{baseUrl}}/bookings/revenue?fromDate=2025-01-01&toDate=2025-12-31
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### get booking statistics (all)
+# @name getBookingStatistics
+GET {{baseUrl}}/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### get booking statistics by movie
+# @name getBookingStatisticsByMovie
+GET {{baseUrl}}/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=693522f1ac9357d6f3874436
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### get booking statistics by cinema
+# @name getBookingStatisticsByCinema
+GET {{baseUrl}}/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&cinemaId=6944be99946fe3fc1e3fab10
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### get booking statistics by movie and cinema
+# @name getBookingStatisticsByMovieAndCinema
+GET {{baseUrl}}/bookings/statistics?fromDate=2025-01-01&toDate=2025-12-31&movieId=693522f1ac9357d6f3874436&cinemaId=6944be92946fe3fc1e3fab08
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
