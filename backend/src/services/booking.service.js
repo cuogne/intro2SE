@@ -2,7 +2,7 @@ const Booking = require('../models/booking.model');
 const Showtime = require('../models/showtime.model');
 const mongoose = require('mongoose');
 
-// GET /api/v1/bookings
+// GET /api/v1/bookings/me
 const getBookingByUser = async (userId) => {
   return await Booking.find({ user: userId })
     .select('showtime user seat price bookedAt')
@@ -341,6 +341,263 @@ const updateBookingSeats = async (userId, bookingId, action, seats) => {
   }
 };
 
+const getAllBookings = async () => {
+  const bookings = await Booking.find()
+    .populate('user', 'username')
+    .populate({
+      path: 'showtime',
+      select: 'startTime totalPrice',
+      populate: [
+        { path: 'movie', select: 'title minutes' },
+        { path: 'cinema', select: 'name address' }
+      ]
+    })
+    .sort({ bookedAt: -1 });
+
+  return bookings.map(booking => ({
+    id: booking._id,
+    user: booking.user?.username || null,
+    movie: booking.showtime?.movie?.title || null,
+    cinema: booking.showtime?.cinema?.name || null,
+    address: booking.showtime?.cinema?.address || null,
+    startTime: booking.showtime?.startTime || null,
+    totalPrice: booking.totalPrice,
+    seat: booking.seat.map(s => `${s.row} - ${s.number}`),
+    quantity: booking.seat.length,
+    status: booking.status,
+    bookedAt: booking.bookedAt,
+    paidAt: booking.paidAt || null,
+    paymentProvider: booking.paymentProvider || null,
+    paymentTransId: booking.paymentTransId || null,
+    paymentMeta: booking.paymentMeta || null,
+  }));
+};
+
+const getTotalRevenue = async (fromDate, toDate) => {
+  try {
+    const result = await Booking.aggregate([
+      {
+        $match: {
+          status: 'confirmed',
+          paidAt: {
+            $gte: new Date(fromDate),
+            $lte: new Date(toDate)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$totalPrice' }
+        }
+      }
+    ]);
+    return result.length > 0 ? result[0].totalRevenue : 0;
+  }
+  catch (error) {
+    throw new Error('Error calculating total revenue');
+  }
+}
+
+const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
+  try {
+    // Build match conditions
+    const matchConditions = {
+      status: 'confirmed',
+      paidAt: {
+        $gte: new Date(fromDate),
+        $lte: new Date(toDate)
+      }
+    };
+
+    // Build aggregation pipeline
+    const pipeline = [
+      { $match: matchConditions },
+      {
+        $lookup: {
+          from: 'showtimes',
+          localField: 'showtime',
+          foreignField: '_id',
+          as: 'showtimeData'
+        }
+      },
+      { $unwind: '$showtimeData' }
+    ];
+
+    // Add movie filter if provided
+    if (movieId) {
+      pipeline.push({
+        $match: {
+          'showtimeData.movie': new mongoose.Types.ObjectId(movieId)
+        }
+      });
+    }
+
+    // Add cinema filter if provided
+    if (cinemaId) {
+      pipeline.push({
+        $match: {
+          'showtimeData.cinema': new mongoose.Types.ObjectId(cinemaId)
+        }
+      });
+    }
+
+    // Lookup movie and cinema data
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'movies',
+          localField: 'showtimeData.movie',
+          foreignField: '_id',
+          as: 'movieData'
+        }
+      },
+      { $unwind: '$movieData' },
+      {
+        $lookup: {
+          from: 'cinemas',
+          localField: 'showtimeData.cinema',
+          foreignField: '_id',
+          as: 'cinemaData'
+        }
+      },
+      { $unwind: '$cinemaData' }
+    );
+
+    // Calculate total statistics
+    const totalStatsPipeline = [
+      ...pipeline,
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$totalPrice' },
+          totalBookings: { $sum: 1 },
+          totalTickets: { $sum: { $size: '$seat' } }
+        }
+      }
+    ];
+
+    // Calculate by movie
+    const movieStatsPipeline = [
+      ...pipeline,
+      {
+        $group: {
+          _id: {
+            movieId: '$showtimeData.movie',
+            movieTitle: '$movieData.title'
+          },
+          revenue: { $sum: '$totalPrice' },
+          tickets: { $sum: { $size: '$seat' } },
+          bookings: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          movieId: '$_id.movieId',
+          movieTitle: '$_id.movieTitle',
+          revenue: 1,
+          tickets: 1,
+          bookings: 1
+        }
+      },
+      { $sort: { revenue: -1 } }
+    ];
+
+    // Calculate by cinema
+    const cinemaStatsPipeline = [
+      ...pipeline,
+      {
+        $group: {
+          _id: {
+            cinemaId: '$showtimeData.cinema',
+            cinemaName: '$cinemaData.name'
+          },
+          revenue: { $sum: '$totalPrice' },
+          tickets: { $sum: { $size: '$seat' } },
+          bookings: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          cinemaId: '$_id.cinemaId',
+          cinemaName: '$_id.cinemaName',
+          revenue: 1,
+          tickets: 1,
+          bookings: 1
+        }
+      },
+      { $sort: { revenue: -1 } }
+    ];
+
+    // Execute all pipelines in parallel
+    const [totalStats, byMovie, byCinema] = await Promise.all([
+      Booking.aggregate(totalStatsPipeline),
+      Booking.aggregate(movieStatsPipeline),
+      Booking.aggregate(cinemaStatsPipeline)
+    ]);
+
+    const stats = totalStats.length > 0 ? totalStats[0] : {
+      totalRevenue: 0,
+      totalBookings: 0,
+      totalTickets: 0
+    };
+
+    // Get all bookings matching the filters
+    const bookingQuery = { status: 'confirmed', paidAt: { $gte: new Date(fromDate), $lte: new Date(toDate) } };
+    const bookings = await Booking.find(bookingQuery)
+      .populate('user', 'username')
+      .populate({
+        path: 'showtime',
+        select: 'startTime totalPrice movie cinema',
+        populate: [
+          { path: 'movie', select: 'title minutes' },
+          { path: 'cinema', select: 'name address' }
+        ]
+      })
+      .sort({ bookedAt: -1 });
+
+    // Filter by movie and cinema if specified
+    let filteredBookings = bookings;
+    if (movieId) {
+      filteredBookings = filteredBookings.filter(b => b.showtime?.movie?._id?.toString() === movieId);
+    }
+    if (cinemaId) {
+      filteredBookings = filteredBookings.filter(b => b.showtime?.cinema?._id?.toString() === cinemaId);
+    }
+
+    const transactionsList = filteredBookings.map(booking => ({
+      id: booking._id,
+      user: booking.user?.username || null,
+      movie: booking.showtime?.movie?.title || null,
+      cinema: booking.showtime?.cinema?.name || null,
+      address: booking.showtime?.cinema?.address || null,
+      startTime: booking.showtime?.startTime || null,
+      totalPrice: booking.totalPrice,
+      seat: booking.seat.map(s => `${s.row} - ${s.number}`),
+      quantity: booking.seat.length,
+      status: booking.status,
+      bookedAt: booking.bookedAt,
+      paidAt: booking.paidAt || null,
+      paymentProvider: booking.paymentProvider || null,
+      paymentTransId: booking.paymentTransId || null,
+      paymentMeta: booking.paymentMeta || null,
+    }));
+
+    return {
+      totalRevenue: stats.totalRevenue || 0,
+      totalBookings: stats.totalBookings || 0,
+      totalTickets: stats.totalTickets || 0,
+      byMovie: byMovie || [],
+      byCinema: byCinema || [],
+      transactions: transactionsList
+    };
+  } catch (error) {
+    throw new Error('Error calculating booking statistics: ' + error.message);
+  }
+};
+
 const cleanupExpiredBookings = async () => {
   const now = new Date();
 
@@ -389,5 +646,8 @@ module.exports = {
   reserveSeats,
   updateBookingSeats,
   checkSeatsAvailable,
+  getAllBookings,
+  getTotalRevenue,
+  getBookingStatistics,
   cleanupExpiredBookings,
 };

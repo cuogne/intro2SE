@@ -1,4 +1,5 @@
 const User = require('../models/user.model')
+const bcrypt = require('bcryptjs')
 
 const getAllAccounts = async () => {
     const users = await User.find().select('-password')
@@ -73,9 +74,67 @@ const updateAccount = async (userId, updateData, currentUserId) => {
     return updatedUser;
 }
 
+const changePassword = async (userId, currentPassword, newPassword) => {
+    const user = await User.findById(userId).select('+password');
+    if (!user) throw new Error('User not found');
+
+    const isMatch = bcrypt.compareSync(currentPassword, user.password)
+    if (!isMatch) throw new Error('Current password is incorrect');
+
+    const salt = bcrypt.genSaltSync(10)
+    user.password = bcrypt.hashSync(newPassword, salt)
+
+    user.updatedAt = new Date();
+    await user.save();
+};
+
+const updateUserByAdmin = async (userId, updateData) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    // Admin có thể cập nhật role
+    if (updateData.role !== undefined) {
+        const validRoles = ['user', 'admin'];
+        if (!validRoles.includes(updateData.role)) {
+            throw new Error('Invalid role');
+        }
+        user.role = updateData.role;
+    }
+
+    // Admin có thể cập nhật email
+    if (updateData.email !== undefined) {
+        const trimmedEmail = updateData.email.trim();
+        if (trimmedEmail && trimmedEmail !== user.email) {
+            const existingEmail = await User.findOne({
+                email: trimmedEmail,
+                _id: { $ne: userId }
+            });
+
+            if (existingEmail) {
+                throw new Error('Email already exists');
+            }
+            user.email = trimmedEmail;
+        }
+    }
+
+    user.updatedAt = new Date();
+    await user.save();
+
+    return user.toObject({
+        getters: true, versionKey: false, transform: (doc, ret) => {
+            delete ret.password;
+            return ret;
+        }
+    });
+};
+
 module.exports = {
     getAllAccounts,
     getAccountById,
     deleteAccount,
-    updateAccount
+    updateAccount,
+    changePassword,
+    updateUserByAdmin
 }
