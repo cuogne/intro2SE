@@ -23,6 +23,7 @@ import SeatSelectionPage from "./pages/SeatSelectionPage";
 import PaymentPage from "./pages/PaymentPage";
 import UserLayout from "./components/layouts/UserLayout";
 import BookingHistoryPage from "./pages/BookingHistoryPage";
+import BookingDetailPage from "./pages/BookingDetailPage";
 
 function App() {
   return (
@@ -39,6 +40,8 @@ function App() {
           <Route path="/seats/:showtimeId" element={<SeatSelectionPage />} />
           <Route path="/payment/:bookingId" element={<PaymentPage />} />
           <Route path="/booking-history" element={<BookingHistoryPage />} />
+          <Route path="/booking/:bookingId" element={<BookingDetailPage />} />
+
         </Route>
         <Route
           path="/admin"

@@ -79,7 +79,7 @@ const BookingHistoryPage: React.FC = () => {
                                 title="Ấn vào vé để xem chi tiết"
                                 onClick={() => {
                                     if (booking.status === "confirmed") {
-                                        navigate(`/ticket/${booking.id}`);
+                                        navigate(`/booking/${booking.id}`);
                                     }
                                 }}
                             >
@@ -140,7 +140,7 @@ const BookingHistoryPage: React.FC = () => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                navigate(`/ticket/${booking.id}`);
+                                                navigate(`/booking/${booking.id}`);
                                             }}
                                             className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold"
                                         >
