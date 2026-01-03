@@ -1,220 +1,173 @@
-<<<<<<< HEAD
-import api from './api';
+import api from "./api";
+
+// --- PHẦN 1: COMMON TYPES (Dùng chung) ---
 
 export interface Seat {
   row: string;
   number: number;
 }
 
+// --- PHẦN 2: ADMIN & STATISTICS (Thống kê và Quản lý) ---
+
+export interface StatsByMovie {
+  revenue: number;
+  tickets: number;
+  bookings: number;
+  movieId: string;
+  movieTitle: string;
+}
+
+export interface StatsByCinema {
+  revenue: number;
+  tickets: number;
+  bookings: number;
+  cinemaId: string;
+  cinemaName: string;
+}
+
+export interface BookingItem {
+  id: string;
+  user: string;
+  movie: string;
+  cinema: string;
+  address: string;
+  startTime: string;
+  totalPrice: number;
+  seat: string[];
+  quantity: number;
+  status: "confirmed" | "pending" | "cancelled";
+  bookedAt: string;
+  paidAt?: string;
+  paymentProvider?: string;
+  paymentTransId?: string;
+  paymentMeta?: {
+    requestId?: string;
+    payUrl?: string;
+    provider?: string;
+    momoTransId?: number;
+    callbackTime?: string;
+  };
+}
+
+export interface BookingStatistics {
+  totalRevenue: number;
+  totalBookings: number;
+  totalTickets: number;
+  byMovie: StatsByMovie[];
+  byCinema: StatsByCinema[];
+  transactions: BookingItem[];
+  filters?: {
+    fromDate: string;
+    toDate: string;
+    movieId?: string;
+    cinemaId?: string;
+  };
+}
+
+export interface BookingsResponse {
+  success: boolean;
+  data: BookingItem[];
+}
+
+export interface StatisticsResponse {
+  success: boolean;
+  data: BookingStatistics;
+}
+
+// API: Lấy tất cả booking (Admin)
+// Backend Route: router.get('/all', ...)
+export const fetchAllBookings = async (): Promise<BookingItem[]> => {
+  const response = await api.get<BookingsResponse>("/v1/bookings/all");
+  return response.data.data;
+};
+
+// API: Lấy thống kê (Admin)
+// Backend Route: router.get('/statistics', ...)
+export const fetchBookingStatistics = async (params: {
+  fromDate: string;
+  toDate: string;
+  movieId?: string;
+  cinemaId?: string;
+}): Promise<BookingStatistics> => {
+  const queryParams = new URLSearchParams();
+  queryParams.append("fromDate", params.fromDate);
+  queryParams.append("toDate", params.toDate);
+  if (params.movieId) queryParams.append("movieId", params.movieId);
+  if (params.cinemaId) queryParams.append("cinemaId", params.cinemaId);
+
+  const response = await api.get<StatisticsResponse>(
+    `/v1/bookings/statistics?${queryParams.toString()}`
+  );
+  return response.data.data;
+};
+
+// --- PHẦN 3: CLIENT & RESERVATION (Đặt vé phía người dùng) ---
+
+export interface SeatReservationResponse {
+  bookingId: string;
+  holdExpiresAt: string; // ISO string
+}
+
 export interface Booking {
   _id: string;
   showtime: {
     _id: string;
+    startTime: string;
     movie: {
-      _id: string;
       title: string;
-      minutes: number;
     };
     cinema: {
-      _id: string;
       name: string;
       address: string;
     };
-    startTime: string;
-    price: number;
-  };
-  user: {
-    _id: string;
-    username: string;
   };
   seat: Seat[];
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  holdExpiresAt?: string;
+  status: "pending" | "confirmed" | "cancelled";
   paidAt?: string;
-  paymentProvider?: string;
-  paymentTransId?: string;
-  paymentMeta?: any;
-  bookedAt: string;
 }
 
-export interface ReserveSeatsResponse {
-  bookingId: string;
-  holdExpiresAt: string;
-  expiresInSeconds: number;
-  isNewBooking: boolean;
-  message: string;
-}
-
-export interface UpdateSeatsResponse {
-  bookingId: string;
-  holdExpiresAt: string;
-  expiresInSeconds: number;
-  message: string;
-  deleted?: boolean;
-}
-
-// GET /api/v1/bookings - Lấy lịch sử đặt vé của user
-export const getBookingHistory = async (): Promise<Booking[]> => {
-  try {
-    const response = await api.get('/v1/bookings');
-    const data = response.data;
-    
-    if (Array.isArray(data)) {
-      return data;
-    }
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    }
-    return [];
-  } catch (error) {
-    console.error('Error fetching booking history:', error);
-    return [];
-  }
-};
-
-// GET /api/v1/bookings/:id - Lấy chi tiết booking
-export const getBookingById = async (bookingId: string): Promise<Booking | null> => {
-  try {
-    const response = await api.get(`/v1/bookings/${bookingId}`);
-    const data = response.data;
-    
-    if (data.data) {
-      return data.data;
-    }
-    return data;
-  } catch (error) {
-    console.error('Error fetching booking:', error);
-    return null;
-  }
-};
-
-// POST /api/v1/bookings - Đặt ghế (tạo booking mới hoặc thêm vào booking hiện có)
+// API: Giữ ghế (Tạo booking pending)
+// Backend Route: router.post('/', ...) -> đường dẫn gốc /v1/bookings
 export const reserveSeats = async (
   showtimeId: string,
   seats: Seat[]
-): Promise<ReserveSeatsResponse> => {
-  try {
-    const response = await api.post('/v1/bookings', {
-      showtimeId,
-      seats
-    });
-    
-    const data = response.data;
-    if (data.data) {
-      return data.data;
-    }
-    return data;
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
-    throw new Error(errorMessage);
-  }
+): Promise<SeatReservationResponse> => {
+  // SỬA: Xóa '/reserve' vì backend bắt ở '/'
+  const response = await api.post("/v1/bookings", {
+    showtimeId,
+    seats,
+  });
+  return response.data.data;
 };
-
-// PATCH /api/v1/bookings/:id/seats - Thêm/xóa ghế khỏi booking
+// API: Cập nhật ghế (Thêm/Xóa ghế trong lúc giữ chỗ)
+// Backend Route: router.patch('/:id/seats', ...)
 export const updateBookingSeats = async (
   bookingId: string,
-  action: 'add' | 'remove',
+  action: "add" | "remove",
   seats: Seat[]
-): Promise<UpdateSeatsResponse> => {
+): Promise<boolean> => {
   try {
-    const response = await api.patch(`/v1/bookings/${bookingId}/seats`, {
+    // SỬA: Đổi method từ PUT sang PATCH để khớp backend
+    await api.patch(`/v1/bookings/${bookingId}/seats`, {
       action,
-      seats
+      seats,
     });
-    
-    const data = response.data;
-    if (data.data) {
-      return data.data;
-    }
-    return data;
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
-    throw new Error(errorMessage);
+    return true;
+  } catch (error) {
+    console.error("Lỗi cập nhật ghế:", error);
+    throw error;
   }
 };
 
-=======
-import api from "./api";
-
-export interface StatsByMovie {
-    revenue: number;
-    tickets: number;
-    bookings: number;
-    movieId: string;
-    movieTitle: string;
-}
-
-export interface StatsByCinema {
-    revenue: number;
-    tickets: number;
-    bookings: number;
-    cinemaId: string;
-    cinemaName: string;
-}
-
-export interface BookingStatistics {
-    totalRevenue: number;
-    totalBookings: number;
-    totalTickets: number;
-    byMovie: StatsByMovie[];
-    byCinema: StatsByCinema[];
-    transactions: BookingItem[];
-    filters?: {
-        fromDate: string;
-        toDate: string;
-        movieId?: string;
-        cinemaId?: string;
-    };
-}
-
-export interface BookingItem {
-    id: string;
-    user: string;
-    movie: string;
-    cinema: string;
-    address: string;
-    startTime: string;
-    totalPrice: number;
-    seat: string[];
-    quantity: number;
-    status: "confirmed" | "pending" | "cancelled";
-    bookedAt: string;
-    paidAt?: string;
-    paymentProvider?: string;
-    paymentTransId?: string;
-    paymentMeta?: {
-        requestId?: string;
-        payUrl?: string;
-        provider?: string;
-        momoTransId?: number;
-        callbackTime?: string;
-    };
-}
-
-export interface BookingsResponse {
-    success: boolean;
-    data: BookingItem[];
-}
-
-export const fetchAllBookings = async (): Promise<BookingItem[]> => {
-    const response = await api.get<BookingsResponse>("/v1/bookings/all");
+// API: Lấy chi tiết booking theo ID
+// Backend Route: router.get('/:id', ...)
+export const getBookingById = async (id: string): Promise<Booking | null> => {
+  try {
+    const response = await api.get(`/v1/bookings/${id}`);
     return response.data.data;
+  } catch (error) {
+    console.error("Lỗi lấy thông tin booking:", error);
+    return null;
+  }
 };
-
-export interface StatisticsResponse {
-    success: boolean;
-    data: BookingStatistics;
-}
-
-export const fetchBookingStatistics = async (params: { fromDate: string; toDate: string; movieId?: string; cinemaId?: string }): Promise<BookingStatistics> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("fromDate", params.fromDate);
-    queryParams.append("toDate", params.toDate);
-    if (params.movieId) queryParams.append("movieId", params.movieId);
-    if (params.cinemaId) queryParams.append("cinemaId", params.cinemaId);
-
-    const response = await api.get<StatisticsResponse>(`/v1/bookings/statistics?${queryParams.toString()}`);
-    return response.data.data;
-};
->>>>>>> admin-pages

@@ -15,17 +15,18 @@ const HomePage: React.FC = () => {
     const loadMovies = async () => {
       setLoading(true);
       try {
-        const [nowShowing, comingSoon] = await Promise.all([
+        const [nowShowingRes, comingSoonRes] = await Promise.all([
           fetchMovies("Now Showing"),
           fetchMovies("Coming Soon"),
         ]);
 
-        setNowShowingMovies(nowShowing);
-        setComingSoonMovies(comingSoon);
+        // ✅ FIX: Access the .movies property from the response object
+        setNowShowingMovies(nowShowingRes.movies || []);
+        setComingSoonMovies(comingSoonRes.movies || []);
 
-        // Set first movie as hero
-        if (nowShowing.length > 0) {
-          setHeroMovie(nowShowing[0]);
+        // Set first movie as hero (check if array exists and has items)
+        if (nowShowingRes.movies && nowShowingRes.movies.length > 0) {
+          setHeroMovie(nowShowingRes.movies[0]);
         }
       } catch (error) {
         console.error("Error loading movies:", error);

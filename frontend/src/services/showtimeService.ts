@@ -57,21 +57,26 @@ export interface ShowtimesListResponse {
 }
 
 export const getFixedDates = () => {
-  // Lưu ý: Month trong JS bắt đầu từ 0 (11 là tháng 12)
-  const fixedDates = [
-    new Date(2025, 11, 7), // Ngày 07/12/2025
-    new Date(2025, 11, 8), // Ngày 08/12/2025
-  ];
+  const dates = [];
+  const today = new Date();
 
-  return fixedDates.map((d) => ({
+  // Tạo ra danh sách 7 ngày tính từ hôm nay
+  for (let i = 0; i < 7; i++) {
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + i);
+    dates.push(nextDate);
+  }
+
+  return dates.map((d) => ({
     fullDate: d,
-    dayName: `Thứ ${d.getDay() + 1 === 1 ? "CN" : d.getDay() + 1}`,
+    // Hiển thị tên thứ (Thứ 2, Thứ 3... CN)
+    dayName: d.getDay() === 0 ? "CN" : `Thứ ${d.getDay() + 1}`,
+    // Định dạng ngày DD/MM
     dateStr: `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`,
   }));
 };
-
 /**
  * Fetch paginated showtimes.
  * Supports optional filters: movieId, cinemaId, date (ISO yyyy-mm-dd)

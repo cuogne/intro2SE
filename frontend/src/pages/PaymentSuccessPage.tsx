@@ -1,28 +1,123 @@
-import React, { useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, Ticket, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import {
+  CheckCircle,
+  XCircle,
+  Ticket,
+  ArrowRight,
+  Home,
+  RefreshCcw,
+} from "lucide-react";
+import { getBookingById } from "../services/bookingService";
 
 const PaymentSuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const bookingId = searchParams.get('bookingId');
+  // Backend cần config redirect về: http://localhost:5173/payment/success?bookingId=...
+  const bookingId = searchParams.get("bookingId");
+
+  // Nếu dùng MoMo, nó có thể trả về resultCode. 0 là thành công.
+  const resultCode = searchParams.get("resultCode");
+
+  const [status, setStatus] = useState<"loading" | "success" | "failed">(
+    "loading"
+  );
 
   useEffect(() => {
-    // Nếu có bookingId, redirect đến trang vé sau 3 giây
-    if (bookingId) {
-      const timer = setTimeout(() => {
-        navigate(`/ticket/${bookingId}`);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [bookingId, navigate]);
+    const checkBookingStatus = async () => {
+      if (!bookingId) {
+        setStatus("failed");
+        return;
+      }
+
+      // Nếu MoMo trả về resultCode khác 0, tức là thất bại
+      if (resultCode && resultCode !== "0") {
+        setStatus("failed");
+        return;
+      }
+
+      try {
+        // Kiểm tra lại trạng thái booking từ backend (vì callback ngrok đã chạy)
+        const booking = await getBookingById(bookingId);
+        if (booking && booking.status === "confirmed") {
+          setStatus("success");
+          // Tự động chuyển trang sau 5s
+          setTimeout(() => navigate(`/ticket/${bookingId}`), 5000);
+        } else {
+          // Có thể callback chưa tới kịp, hoặc thanh toán lỗi
+          // Ở đây mình tạm coi là success nếu không có mã lỗi rõ ràng,
+          // nhưng thực tế nên có cơ chế long-polling để check status.
+          // Để đơn giản cho bài tập, nếu không có resultCode lỗi thì coi như chờ xác nhận
+          setStatus(booking?.status === "confirmed" ? "success" : "loading");
+
+          // Nếu vẫn loading (pending), thử check lại sau 2s
+          if (booking?.status === "pending") {
+            setTimeout(checkBookingStatus, 2000);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        setStatus("failed");
+      }
+    };
+
+    checkBookingStatus();
+  }, [bookingId, resultCode, navigate]);
+
+  if (status === "loading") {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          Đang xác nhận kết quả thanh toán...
+        </h2>
+        <p className="text-gray-500 mt-2">Vui lòng không tắt trình duyệt</p>
+      </div>
+    );
+  }
+
+  if (status === "failed") {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-[#324467] rounded-xl p-12 text-center">
+          <XCircle className="w-20 h-20 text-red-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Thanh toán thất bại
+          </h1>
+          <p className="text-gray-600 dark:text-text-secondary mb-8">
+            Giao dịch đã bị hủy hoặc xảy ra lỗi trong quá trình thanh toán.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => navigate("/movies")}
+              className="flex items-center gap-2 px-6 py-3 bg-gray-200 dark:bg-[#232f48] text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 transition-colors font-bold"
+            >
+              <Home className="w-5 h-5" />
+              Về trang chủ
+            </button>
+            {bookingId && (
+              <button
+                onClick={() => navigate(`/payment/${bookingId}`)}
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold"
+              >
+                <RefreshCcw className="w-5 h-5" />
+                Thử thanh toán lại
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-[#324467] rounded-xl p-12 text-center">
         <div className="mb-6">
           <CheckCircle className="w-20 h-20 text-green-500 dark:text-green-400 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Thanh toán thành công!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Thanh toán thành công!
+          </h1>
           <p className="text-gray-600 dark:text-text-secondary">
             Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi
           </p>
@@ -33,45 +128,23 @@ const PaymentSuccessPage: React.FC = () => {
             Vé điện tử đã được gửi đến email của bạn
           </p>
           <p className="text-sm text-gray-600 dark:text-text-secondary">
-            Vui lòng đến rạp đúng giờ và trình mã QR để vào xem phim
+            Bạn sẽ được chuyển đến trang vé trong giây lát...
           </p>
         </div>
 
-        {bookingId ? (
-          <div className="space-y-3">
-            <p className="text-gray-600 dark:text-text-secondary">
-              Đang chuyển đến trang vé...
-            </p>
-            <button
-              onClick={() => navigate(`/ticket/${bookingId}`)}
-              className="flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold"
-            >
-              <Ticket className="w-5 h-5" />
-              Xem vé ngay
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/bookings')}
-              className="flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold"
-            >
-              <Ticket className="w-5 h-5" />
-              Xem lịch sử đặt vé
-            </button>
-            <button
-              onClick={() => navigate('/movies')}
-              className="block mx-auto text-gray-600 dark:text-text-secondary hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
-            >
-              Tiếp tục đặt vé
-            </button>
-          </div>
-        )}
+        <div className="space-y-3">
+          <button
+            onClick={() => navigate(`/ticket/${bookingId}`)}
+            className="flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold shadow-lg shadow-primary/30"
+          >
+            <Ticket className="w-5 h-5" />
+            Xem vé ngay
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default PaymentSuccessPage;
-
