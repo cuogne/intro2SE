@@ -5,7 +5,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="border-t border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark pt-16 pb-8 px-4 md:px-10">
       <div className="max-w-[1440px] mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
             <div className="flex items-center gap-3 text-slate-900 dark:text-white mb-2">
               <div className="size-6 text-primary">
@@ -51,8 +51,9 @@ const Footer: React.FC = () => {
             <a className="text-slate-600 dark:text-text-secondary text-sm hover:text-primary transition-colors" href="#">Rạp / Giá vé</a>
             <a className="text-slate-600 dark:text-text-secondary text-sm hover:text-primary transition-colors" href="#">Tuyển dụng</a>
           </div>
+          
         </div>
-        <div className="border-t border-slate-200 dark:border-border-dark pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="pt-3 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 dark:text-text-secondary text-xs">© 2023 ABC Cinema. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <div className="h-8 w-auto opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer">
