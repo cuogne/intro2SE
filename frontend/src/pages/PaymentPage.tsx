@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getBookingById, type Booking } from "../services/bookingService";
+import { getBookingById, type BookingItem } from "../services/bookingService";
 import { createZaloPayOrder, createMomoPayment } from "../services/paymentService";
 import { ArrowLeft, Info } from "lucide-react";
 
@@ -12,7 +12,7 @@ const PaymentPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    const [booking, setBooking] = useState<Booking | null>(null);
+    const [booking, setBooking] = useState<BookingItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string>("");
@@ -93,12 +93,14 @@ const PaymentPage: React.FC = () => {
     if (!booking) return <div className="text-center py-10 text-red-500">{error || "Không tìm thấy đơn"}</div>;
 
     // --- SAFE DATA ---
-    const totalPrice = booking.totalPrice || 0;
-    const seatList = booking.seat ? booking.seat.map((s: any) => (typeof s === "object" ? `${s.row}-${s.number}` : s)).join(", ") : "Chưa chọn ghế";
+    console.log("Booking Data:", booking);
 
-    const movieTitle = booking.showtime?.movie?.title || "Đang cập nhật";
-    const cinemaName = booking.showtime?.cinema?.name || "Đang cập nhật";
-    const showTime = booking.showtime?.startTime ? new Date(booking.showtime.startTime).toLocaleString("vi-VN") : "Unknown";
+    const totalPrice = booking.totalPrice || 0;
+    const seatList = booking.seat ? booking.seat.join(", ") : "Chưa chọn ghế";
+
+    const movieTitle = booking.movie || "Đang cập nhật";
+    const cinemaName = booking.cinema || "Đang cập nhật";
+    const showTime = booking.startTime ? new Date(booking.startTime).toLocaleString("vi-VN") : "Unknown";
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
