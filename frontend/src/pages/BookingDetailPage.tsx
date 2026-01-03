@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBookingById, type BookingItem } from "../services/bookingService";
-import { Calendar, MapPin, Ticket, Clock, User, CreditCard, ArrowLeft, Download } from "lucide-react";
+import { Calendar, MapPin, Ticket, Clock, User, CreditCard, ArrowLeft, Download, FileDown } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { pdf } from "@react-pdf/renderer";
+import { TicketDocument } from "../components/TicketDocument";
 
 export default function BookingDetailPage() {
     const { bookingId } = useParams<{ bookingId: string }>();
@@ -48,7 +50,7 @@ export default function BookingDetailPage() {
         }
     };
 
-    const handleDownload = () => {
+    const handleDownloadQR = () => {
         if (!booking) return;
 
         // Get the QR code SVG element
@@ -63,11 +65,55 @@ export default function BookingDetailPage() {
         // Create download link
         const link = document.createElement("a");
         link.href = url;
-        link.download = `ticket-${booking.id}.svg`;
+        link.download = `qr-${booking.id}.svg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+    };
+
+    const handleDownloadPDF = async () => {
+        if (!booking) return;
+
+        // Get QR code as data URL
+        const svg = document.querySelector(".qr-code-container svg");
+        if (!svg) return;
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+
+        // Convert to data URL for PDF
+        const img = new Image();
+        img.src = url;
+        await new Promise((resolve) => {
+            img.onload = resolve;
+        });
+
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+        }
+        const qrCodeDataUrl = canvas.toDataURL("image/png");
+        URL.revokeObjectURL(url);
+
+        // Generate PDF
+        const blob = await pdf(<TicketDocument booking={booking} qrCodeDataUrl={qrCodeDataUrl} />).toBlob();
+        const pdfUrl = URL.createObjectURL(blob);
+
+        // Download
+        const link = document.createElement("a");
+        link.href = pdfUrl;
+        link.download = `ticket-${booking.id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(pdfUrl);
     };
 
     if (loading) {
@@ -86,7 +132,7 @@ export default function BookingDetailPage() {
     const isPast = showtimeDate < new Date();
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="container mx-auto px-4 pb-8 max-w-6xl">
             {/* Header */}
             <div className="mb-6">
                 <button onClick={() => navigate("/booking-history")} className="flex items-center gap-2 text-gray-600 dark:text-text-secondary hover:text-primary transition-colors mb-4">
@@ -124,14 +170,14 @@ export default function BookingDetailPage() {
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Thông tin suất chiếu</h3>
                         <div className="space-y-3 text-gray-600 dark:text-text-secondary">
                             <div className="flex items-start gap-3">
-                                <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                                <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
                                 <div>
                                     <p className="font-semibold text-gray-900 dark:text-white">{booking.cinema}</p>
                                     <p className="text-sm">{booking.address}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Calendar className="w-5 h-5 flex-shrink-0" />
+                                <Calendar className="w-5 h-5 shrink-0" />
                                 <span>
                                     {showtimeDate.toLocaleDateString("vi-VN", {
                                         weekday: "long",
@@ -142,7 +188,7 @@ export default function BookingDetailPage() {
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 flex-shrink-0" />
+                                <Clock className="w-5 h-5 shrink-0" />
                                 <span>
                                     {showtimeDate.toLocaleTimeString("vi-VN", {
                                         hour: "2-digit",
@@ -151,7 +197,7 @@ export default function BookingDetailPage() {
                                 </span>
                             </div>
                             <div className="flex items-start gap-3">
-                                <Ticket className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                                <Ticket className="w-5 h-5 mt-0.5 shrink-0" />
                                 <div>
                                     <p className="font-semibold text-gray-900 dark:text-white mb-1">Ghế đã chọn:</p>
                                     <p className="text-base">{booking.seat.join(", ")}</p>
@@ -167,7 +213,7 @@ export default function BookingDetailPage() {
                             <div className="space-y-3 text-gray-600 dark:text-text-secondary">
                                 {booking.paidAt && (
                                     <div className="flex items-center gap-3">
-                                        <Clock className="w-5 h-5 flex-shrink-0" />
+                                        <Clock className="w-5 h-5 shrink-0" />
                                         <div>
                                             <p className="text-sm text-gray-500 dark:text-text-secondary/70">Thời gian thanh toán</p>
                                             <p className="font-semibold text-gray-900 dark:text-white">{new Date(booking.paidAt).toLocaleString("vi-VN")}</p>
@@ -176,7 +222,7 @@ export default function BookingDetailPage() {
                                 )}
                                 {booking.paymentProvider && (
                                     <div className="flex items-center gap-3">
-                                        <CreditCard className="w-5 h-5 flex-shrink-0" />
+                                        <CreditCard className="w-5 h-5 shrink-0" />
                                         <div>
                                             <p className="text-sm text-gray-500 dark:text-text-secondary/70">Phương thức thanh toán</p>
                                             <p className="font-semibold text-gray-900 dark:text-white uppercase">{booking.paymentProvider}</p>
@@ -185,7 +231,7 @@ export default function BookingDetailPage() {
                                 )}
                                 {booking.paymentTransId && (
                                     <div className="flex items-start gap-3">
-                                        <CreditCard className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                                        <CreditCard className="w-5 h-5 mt-0.5 shrink-0" />
                                         <div>
                                             <p className="text-sm text-gray-500 dark:text-text-secondary/70">Mã giao dịch</p>
                                             <p className="font-mono text-sm text-gray-900 dark:text-white break-all">{booking.paymentTransId}</p>
@@ -201,14 +247,14 @@ export default function BookingDetailPage() {
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Thông tin đặt vé</h3>
                         <div className="space-y-3 text-gray-600 dark:text-text-secondary">
                             <div className="flex items-center gap-3">
-                                <User className="w-5 h-5 flex-shrink-0" />
+                                <User className="w-5 h-5 shrink-0" />
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-text-secondary/70">Mã đặt vé</p>
                                     <p className="font-mono text-sm text-gray-900 dark:text-white">{booking.id}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 flex-shrink-0" />
+                                <Clock className="w-5 h-5 shrink-0" />
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-text-secondary/70">Thời gian đặt vé</p>
                                     <p className="font-semibold text-gray-900 dark:text-white">{new Date(booking.bookedAt).toLocaleString("vi-VN")}</p>
@@ -228,13 +274,22 @@ export default function BookingDetailPage() {
                             </div>
                         </div>
                         <p className="text-sm text-center text-gray-600 dark:text-text-secondary mb-4">Quét mã QR này tại rạp để lấy vé</p>
-                        <button
-                            onClick={handleDownload}
-                            className="w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold flex items-center justify-center gap-2"
-                        >
-                            <Download className="w-5 h-5" />
-                            Tải mã QR
-                        </button>
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleDownloadPDF}
+                                className="w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold flex items-center justify-center gap-2"
+                            >
+                                <FileDown className="w-5 h-5" />
+                                Tải vé PDF
+                            </button>
+                            <button
+                                onClick={handleDownloadQR}
+                                className="w-full px-4 py-3 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors font-bold flex items-center justify-center gap-2"
+                            >
+                                <Download className="w-5 h-5" />
+                                Tải mã QR
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
