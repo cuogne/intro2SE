@@ -26,18 +26,6 @@ export interface MovieListResponse {
   pagination: Pagination;
 }
 
-// DỮ LIỆU GIẢ (Backup)
-const MOCK_MOVIES: Movie[] = Array.from({ length: 20 }).map((_, index) => ({
-  _id: `mock-${index}`,
-  title: `Phim Mẫu ${index + 1}`,
-  minutes: 120,
-  genre: ["Hành động", "Viễn tưởng"],
-  releaseDate: new Date().toISOString(),
-  posterImg: "https://placehold.co/300x450/png?text=Mock+Data",
-  trailerLink: "",
-  description: "Dữ liệu giả lập.",
-  status: index % 2 === 0 ? "now_showing" : "coming_soon",
-}));
 
 export const fetchMovies = async (
   status?: "Now Showing" | "Coming Soon" | "Ended",
@@ -78,25 +66,18 @@ export const fetchMovies = async (
 
     const finalMovies = movies.length
       ? movies
-      : MOCK_MOVIES.filter(
-          (m) => !normalizedStatus || m.status === normalizedStatus
-        );
+      : [];
 
     return { movies: finalMovies, pagination };
   } catch (error) {
     console.error("❌ Lỗi gọi API:", error);
-    let normalizedStatus: MovieStatus | undefined =
-      status === "Now Showing" ? "now_showing" : "coming_soon";
-    const fallback = MOCK_MOVIES.filter(
-      (m) => !normalizedStatus || m.status === normalizedStatus
-    );
     return {
-      movies: fallback,
+      movies: [],
       pagination: {
         page,
         limit,
-        total: fallback.length,
-        totalPages: Math.max(1, Math.ceil(fallback.length / limit)),
+        total: 0,
+        totalPages: 1,
       },
     };
   }

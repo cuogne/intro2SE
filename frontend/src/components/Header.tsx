@@ -36,10 +36,10 @@ const Header: React.FC = () => {
                         <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] hidden sm:block">ABC Cinema</h2>
                     </Link>
                     {/* Desktop Search */}
-                    <div className="hidden md:flex flex-col min-w-60">
+                    <div className="hidden md:flex flex-col min-w-80">
                         <form
                             onSubmit={handleSearch}
-                            className="flex w-full flex-1 items-stretch rounded-lg h-10 bg-slate-100 dark:bg-[#232f48] group focus-within:ring-2 focus-within:ring-primary/50 transition-all"
+                            className="flex w-full flex-1 items-stretch rounded-md p-1.5 h-10 bg-slate-100 dark:bg-[#232f48] group focus-within:ring-2 focus-within:ring-primary/50 transition-all"
                         >
                             <div className="text-slate-400 dark:text-[#92a4c9] flex items-center justify-center pl-3">
                                 <span className="material-symbols-outlined text-[20px]">search</span>
@@ -49,7 +49,7 @@ const Header: React.FC = () => {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="flex w-full min-w-0 flex-1 bg-transparent border-none text-slate-900 dark:text-white focus:outline-none focus:ring-0 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] px-3 text-sm font-normal"
-                                placeholder="Tìm phim, rạp..."
+                                placeholder="Tìm kiếm phim..."
                             />
                         </form>
                     </div>

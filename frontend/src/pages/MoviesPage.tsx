@@ -1,154 +1,161 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Pagination, ConfigProvider, theme } from "antd";
 import MovieCard from "../components/MovieCard";
 import { fetchMovies } from "../services/movieService";
-import type { Movie } from "../services/movieService";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import type { Movie, MovieListResponse } from "../services/movieService";
+import { useTheme } from "../context/ThemeContext";
 
 const ITEMS_PER_PAGE = 8;
 
 const MoviesPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"Now Showing" | "Coming Soon">(
-    "Now Showing"
-  );
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<"Now Showing" | "Coming Soon">("Now Showing");
+    const [movies, setMovies] = useState<Movie[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [pagination, setPagination] = useState({
+        total: 0,
+        pageSize: ITEMS_PER_PAGE,
+        current: 1,
+    });
 
-  // 1. Thêm State cho từ khóa tìm kiếm
-  const [searchTerm, setSearchTerm] = useState("");
+    const { isDarkTheme } = useTheme();
 
-  // Load data khi đổi Tab
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const res = await fetchMovies(activeTab);
-      setMovies(res.movies);
-      setCurrentPage(1);
-      // Reset tìm kiếm khi đổi tab (tuỳ chọn)
-      setSearchTerm("");
-      setLoading(false);
+    // Lấy search term từ URL
+    const searchTerm = searchParams.get("search") || "";
+
+    // Load data khi đổi Tab, page, hoặc search term
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const res: MovieListResponse = await fetchMovies(activeTab, currentPage, ITEMS_PER_PAGE, searchTerm || undefined);
+                setMovies(res.movies);
+                setPagination({
+                    total: res.pagination.total,
+                    pageSize: res.pagination.limit,
+                    current: res.pagination.page,
+                });
+            } catch (error) {
+                console.error("Error loading movies:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [activeTab, currentPage, searchTerm]);
+
+    // Reset về trang 1 khi đổi tab hoặc search term thay đổi
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchTerm]);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
-    loadData();
-  }, [activeTab]);
 
-  // 2. Logic Lọc phim (Search Logic)
-  // Lọc phim trước, sau đó mới Phân trang
-  const filteredMovies = movies.filter((movie) =>
-    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    const handleTabChange = (tab: "Now Showing" | "Coming Soon") => {
+        setActiveTab(tab);
+        // Xóa search param khi đổi tab (optional)
+        searchParams.delete("search");
+        setSearchParams(searchParams);
+    };
 
-  // 3. Logic Phân trang (Dựa trên danh sách đã lọc)
-  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE);
-  const currentMovies = filteredMovies.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  // Reset về trang 1 nếu người dùng nhập tìm kiếm
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* --- KHU VỰC HEADER CỦA TRANG (Tab + Tìm kiếm) --- */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        {/* Tab Switcher */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab("Now Showing")}
-            className={`px-6 py-2 rounded font-bold border transition-colors ${
-              activeTab === "Now Showing"
-                ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
-                : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
-            }`}
-          >
-            Phim đang chiếu
-          </button>
-          <button
-            onClick={() => setActiveTab("Coming Soon")}
-            className={`px-6 py-2 rounded font-bold border transition-colors ${
-              activeTab === "Coming Soon"
-                ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
-                : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
-            }`}
-          >
-            Phim sắp chiếu
-          </button>
-        </div>
-
-        {/* Ô Tìm Kiếm Mới */}
-        <div className="relative w-full md:w-96">
-          <input
-            type="text"
-            placeholder="Tìm kiếm phim..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-900 dark:text-white rounded px-4 py-2 pl-10 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-slate-400 dark:placeholder:text-text-secondary"
-          />
-          <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400 dark:text-text-secondary" />
-        </div>
-      </div>
-
-      {/* Grid Movies */}
-      {loading ? (
-        <div className="text-center py-20 text-slate-600 dark:text-text-secondary">Đang tải dữ liệu...</div>
-      ) : (
-        <>
-          {/* Thông báo nếu không tìm thấy phim */}
-          {filteredMovies.length === 0 && (
-            <div className="text-center py-12 text-slate-500 dark:text-text-secondary">
-              Không tìm thấy phim nào phù hợp với từ khóa "{searchTerm}".
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-12">
-            {currentMovies.map((movie) => (
-              <MovieCard key={movie._id} movie={movie} />
-            ))}
-          </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 0 && (
-            <div className="flex justify-center items-center gap-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="flex items-center px-4 py-2 border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-900 dark:text-white rounded disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-border-dark/50 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-              </button>
-
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pageNum = idx + 1;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-10 h-10 border rounded font-bold transition-colors ${
-                      currentPage === pageNum
-                        ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
-                        : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
+    return (
+        <div className="container mx-auto px-4 py-8">
+            {/* Tab Switcher */}
+            <div className="flex justify-start gap-4 mb-8">
+                <button
+                    onClick={() => handleTabChange("Now Showing")}
+                    className={`px-6 py-2 rounded font-bold border transition-colors ${
+                        activeTab === "Now Showing"
+                            ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
+                            : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
                     }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="flex items-center px-4 py-2 border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-900 dark:text-white rounded disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-border-dark/50 cursor-pointer"
-              >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </button>
+                >
+                    Phim đang chiếu
+                </button>
+                <button
+                    onClick={() => handleTabChange("Coming Soon")}
+                    className={`px-6 py-2 rounded font-bold border transition-colors ${
+                        activeTab === "Coming Soon"
+                            ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
+                            : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
+                    }`}
+                >
+                    Phim sắp chiếu
+                </button>
             </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+
+            {/* Search Result Info */}
+            {searchTerm && (
+                <div className="mb-6 text-center">
+                    <p className="text-slate-600 dark:text-text-secondary">
+                        Kết quả tìm kiếm cho: <span className="font-bold text-slate-900 dark:text-white">"{searchTerm}"</span>
+                    </p>
+                    <button
+                        onClick={() => {
+                            searchParams.delete("search");
+                            setSearchParams(searchParams);
+                        }}
+                        className="text-primary hover:underline text-sm mt-2"
+                    >
+                        Xóa bộ lọc
+                    </button>
+                </div>
+            )}
+
+            {/* Grid Movies */}
+            {loading ? (
+                <div className="text-center py-20 text-slate-600 dark:text-text-secondary">Đang tải dữ liệu...</div>
+            ) : (
+                <>
+                    {movies.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500 dark:text-text-secondary">
+                            {searchTerm ? `Không tìm thấy phim nào phù hợp với từ khóa "${searchTerm}".` : "Không có phim nào."}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-12">
+                                {movies.map((movie) => (
+                                    <MovieCard key={movie._id} movie={movie} />
+                                ))}
+                            </div>
+
+                            {/* Ant Design Pagination */}
+
+                            {pagination.total > ITEMS_PER_PAGE && (
+                                <ConfigProvider
+                                    theme={{
+                                        token: {
+                                            colorBgContainer: isDarkTheme() ? "#111318" : "#f8fafc",
+                                            colorText: isDarkTheme() ? "#fff" : "#000",
+                                            colorBorder: isDarkTheme() ? "#2d3748" : "#e2e8f0",
+                                        },
+                                        algorithm: isDarkTheme() ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                                    }}
+                                >
+                                    <div className="flex justify-center mt-8">
+                                        <Pagination
+                                            current={pagination.current}
+                                            total={pagination.total}
+                                            pageSize={pagination.pageSize}
+                                            onChange={handlePageChange}
+                                            showSizeChanger={false}
+                                            showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} phim`}
+                                            className="dark:text-white"
+                                        />
+                                    </div>
+                                </ConfigProvider>
+                            )}
+                        </>
+                    )}
+                </>
+            )}
+        </div>
+    );
 };
 
 export default MoviesPage;
