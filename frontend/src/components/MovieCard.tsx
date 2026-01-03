@@ -12,7 +12,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
     // Bọc toàn bộ Card bằng Link trỏ tới /movie/:id
     <Link to={`/movie/${movie._id}`} className="block">
       <div className="flex flex-col gap-2 group cursor-pointer">
-        <div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+        <div className="relative aspect-2/3 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
           {movie.posterImg ? (
             <img
               src={movie.posterImg}
@@ -29,7 +29,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
         <div className="space-y-1">
           <h3
-            className="font-bold text-lg truncate text-black"
+            className="font-bold text-lg truncate text-black dark:text-white"
             title={movie.title}
           >
             {movie.title}

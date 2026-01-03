@@ -162,7 +162,7 @@ export const updateBookingSeats = async (
 
 // API: Lấy chi tiết booking theo ID
 // Backend Route: router.get('/:id', ...)
-export const getBookingById = async (id: string): Promise<Booking | null> => {
+export const getBookingById = async (id: string): Promise<BookingItem | null> => {
   try {
     const response = await api.get(`/v1/bookings/${id}`);
     return response.data.data;
@@ -171,3 +171,29 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
     return null;
   }
 };
+
+
+// API: Lấy lịch sử đặt vé của user hiện tại
+// Backend Route: router.get('/user/history', ...)
+export const getBookingsHistory = async (): Promise<BookingItem[] | null> => {
+  try {
+      const response = await api.get(`/v1/bookings/me`);
+      const data = response.data.data;
+      if (!data || data.length === 0) {
+          return [];
+      }
+
+      const bookings: BookingItem[] = [];
+      for (const b of data) {
+          const detail = await getBookingById(b._id);
+          if (detail) {
+              bookings.push(detail);
+          }
+      }
+
+      return bookings;
+  } catch (error) {
+      console.error("Lỗi lấy thông tin booking:", error);
+      return null;
+  }
+}

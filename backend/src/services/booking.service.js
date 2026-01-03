@@ -64,7 +64,7 @@ const getBookingById = async (bookingId, currentUserId) => {
     address: booking.showtime.cinema.address,
     startTime: booking.showtime.startTime,
     totalPrice: booking.totalPrice,
-    seat: booking.seat.map(s => `${s.row} - ${s.number}`),
+    seat: booking.seat.map(s => `${s.row}${s.number}`),
     quantity: booking.seat.length,
     status: booking.status,
     bookedAt: booking.bookedAt,

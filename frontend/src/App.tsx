@@ -20,9 +20,10 @@ import AdminCinemaPage from "./pages/AdminCinemaPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminPaymentPage from "./pages/AdminPaymentPage";
 import SeatSelectionPage from "./pages/SeatSelectionPage";
-import Footer from "./components/Footer";
 import PaymentPage from "./pages/PaymentPage";
 import UserLayout from "./components/layouts/UserLayout";
+import BookingHistoryPage from "./pages/BookingHistoryPage";
+import BookingDetailPage from "./pages/BookingDetailPage";
 
 function App() {
   return (
@@ -38,6 +39,9 @@ function App() {
           <Route path="/movie/:id" element={<MovieDetailPage />} />
           <Route path="/seats/:showtimeId" element={<SeatSelectionPage />} />
           <Route path="/payment/:bookingId" element={<PaymentPage />} />
+          <Route path="/bookings" element={<BookingHistoryPage />} />
+          <Route path="/booking/:bookingId" element={<BookingDetailPage />} />
+
         </Route>
         <Route
           path="/admin"
