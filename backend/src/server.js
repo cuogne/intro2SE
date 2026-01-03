@@ -6,6 +6,7 @@ const authRoute = require('./routes/auth.route');
 const bookingRoute = require('./routes/booking.route');
 const paymentRoute = require('./routes/payment.route');
 const userRoute = require('./routes/user.route');
+const staffRoute = require('./routes/staff.route');
 const connectMongoDB = require('./config/mongodb.config');
 const { startCleanupJob } = require('./utils/cleanupJob');
 require('dotenv').config();
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoute);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/payments', paymentRoute);
+app.use('/api/v1/staff', staffRoute);
 
 const startServer = async () => {
   try {
