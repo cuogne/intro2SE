@@ -39,7 +39,7 @@ const Header: React.FC = () => {
                     <div className="hidden md:flex flex-col min-w-80">
                         <form
                             onSubmit={handleSearch}
-                            className="flex w-full flex-1 items-stretch rounded-md p-1.5 h-10 bg-slate-100 dark:bg-[#232f48] group focus-within:ring-2 focus-within:ring-primary/50 transition-all"
+                            className="flex w-full flex-1 items-stretch rounded-lg p-1 h-10 bg-slate-100 dark:bg-[#232f48] group focus-within:ring-2 focus-within:ring-primary/50 transition-all"
                         >
                             <div className="text-slate-400 dark:text-[#92a4c9] flex items-center justify-center pl-3">
                                 <span className="material-symbols-outlined text-[20px]">search</span>
@@ -48,8 +48,8 @@ const Header: React.FC = () => {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="flex w-full min-w-0 flex-1 bg-transparent border-none text-slate-900 dark:text-white focus:outline-none focus:ring-0 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] px-3 text-sm font-normal"
-                                placeholder="Tìm kiếm phim..."
+                                className="flex w-full min-w-0 flex-1 bg-transparent border-none text-slate-900 dark:text-white focus:outline-none focus:ring-0 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] px-3 text-md font-normal"
+                                placeholder="Tìm phim, rạp..."
                             />
                         </form>
                     </div>
@@ -57,7 +57,7 @@ const Header: React.FC = () => {
                 <div className="flex items-center gap-4 lg:gap-8">
                     {/* Navigation for logged in users */}
                     {user && (
-                        <Link to="/booking-history" className="hidden md:block text-slate-900 dark:text-white text-sm font-medium hover:text-primary transition-colors">
+                        <Link to="/bookings" className="hidden md:block text-slate-900 dark:text-white text-sm font-medium hover:text-primary transition-colors">
                             Lịch sử đặt vé
                         </Link>
                     )}

@@ -15,7 +15,7 @@ export default function BookingDetailPage() {
     useEffect(() => {
         const loadBooking = async () => {
             if (!bookingId) {
-                navigate("/booking-history");
+                navigate("/bookings");
                 return;
             }
 
@@ -23,13 +23,13 @@ export default function BookingDetailPage() {
             try {
                 const data = await getBookingById(bookingId);
                 if (!data) {
-                    navigate("/booking-history");
+                    navigate("/bookings");
                     return;
                 }
                 setBooking(data);
             } catch (error) {
                 console.error("Error loading booking:", error);
-                navigate("/booking-history");
+                navigate("/bookings");
             } finally {
                 setLoading(false);
             }
@@ -135,7 +135,7 @@ export default function BookingDetailPage() {
         <div className="container mx-auto px-4 pb-8 max-w-6xl">
             {/* Header */}
             <div className="mb-6">
-                <button onClick={() => navigate("/booking-history")} className="flex items-center gap-2 text-gray-600 dark:text-text-secondary hover:text-primary transition-colors mb-4">
+                <button onClick={() => navigate("/bookings")} className="flex items-center gap-2 text-gray-600 dark:text-text-secondary hover:text-primary transition-colors mb-4">
                     <ArrowLeft className="w-5 h-5" />
                     <span>Quay lại lịch sử đặt vé</span>
                 </button>
