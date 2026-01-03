@@ -57,7 +57,7 @@ const Header: React.FC = () => {
                 <div className="flex items-center gap-4 lg:gap-8">
                     {/* Navigation for logged in users */}
                     {user && (
-                        <Link to="/bookings" className="hidden md:block text-slate-900 dark:text-white text-sm font-medium hover:text-primary transition-colors">
+                        <Link to="/booking-history" className="hidden md:block text-slate-900 dark:text-white text-sm font-medium hover:text-primary transition-colors">
                             Lịch sử đặt vé
                         </Link>
                     )}

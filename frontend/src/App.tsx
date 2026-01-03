@@ -22,6 +22,7 @@ import AdminPaymentPage from "./pages/AdminPaymentPage";
 import SeatSelectionPage from "./pages/SeatSelectionPage";
 import PaymentPage from "./pages/PaymentPage";
 import UserLayout from "./components/layouts/UserLayout";
+import BookingHistoryPage from "./pages/BookingHistoryPage";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           <Route path="/movie/:id" element={<MovieDetailPage />} />
           <Route path="/seats/:showtimeId" element={<SeatSelectionPage />} />
           <Route path="/payment/:bookingId" element={<PaymentPage />} />
+          <Route path="/booking-history" element={<BookingHistoryPage />} />
         </Route>
         <Route
           path="/admin"
