@@ -63,12 +63,13 @@ const AuthPage: React.FC = () => {
             if (res.success && res.data) {
                 // Gọi hàm login của Context để cập nhật Header ngay lập tức
                 login(res.data.user, res.data.token);
-                
-                alert("Đăng nhập thành công!");
-                navigate('/'); 
             }
-            alert("Đăng nhập thành công!");
-            navigate('/movies'); // Chuyển về trang chủ
+
+			if (res.data?.user.role === 'admin') {
+				navigate('/admin/movies'); // Chuyển đến trang admin nếu là admin
+			} else{
+            	navigate(-1);
+			}
         }
     } catch (err: any) {
         console.error(err);

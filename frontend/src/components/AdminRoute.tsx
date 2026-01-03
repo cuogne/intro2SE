@@ -9,12 +9,9 @@ interface AdminRouteProps {
 export default function AdminRoute({ children }: AdminRouteProps) {
     const { user } = useAuth();
 
-    // Nếu chưa đăng nhập -> chuyển sang /auth
-    // if (!user) return <Navigate to="/auth" replace />;
+    if (!user || user.role !== 'admin') {
+        return <Navigate to="/" replace />;
+    }
 
-    // Nếu đã đăng nhập nhưng không phải admin -> chuyển sang /
-    // if (user.role !== "admin") return <Navigate to="/" replace />;
-
-    //test
     return <>{children}</>;
 }
