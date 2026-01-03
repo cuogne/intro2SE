@@ -20,7 +20,6 @@ import AdminCinemaPage from "./pages/AdminCinemaPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminPaymentPage from "./pages/AdminPaymentPage";
 import SeatSelectionPage from "./pages/SeatSelectionPage";
-import Footer from "./components/Footer";
 import PaymentPage from "./pages/PaymentPage";
 import UserLayout from "./components/layouts/UserLayout";
 

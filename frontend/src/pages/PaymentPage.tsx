@@ -6,7 +6,7 @@ import {
   createZaloPayOrder,
   createMomoPayment,
 } from "../services/paymentService";
-import { ArrowLeft, CreditCard, Clock, Info, Copy } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 
 type PaymentMethod = "zalopay" | "momo";
 

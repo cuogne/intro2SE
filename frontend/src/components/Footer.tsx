@@ -1,8 +1,6 @@
 import React from 'react';
-import { useTheme } from '../context/ThemeContext';
 
 const Footer: React.FC = () => {
-  const { isDarkTheme } = useTheme();
   
   return (
     <footer className="border-t border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark pt-16 pb-8 px-4 md:px-10">

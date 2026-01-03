@@ -3,12 +3,10 @@ import MovieCard from "../components/MovieCard";
 import { fetchMovies } from "../services/movieService";
 import type { Movie } from "../services/movieService";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useTheme } from "../context/ThemeContext";
 
 const ITEMS_PER_PAGE = 8;
 
 const MoviesPage: React.FC = () => {
-  const { isDarkTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<"Now Showing" | "Coming Soon">(
     "Now Showing"
   );
