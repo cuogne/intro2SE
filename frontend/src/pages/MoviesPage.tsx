@@ -3,10 +3,12 @@ import MovieCard from "../components/MovieCard";
 import { fetchMovies } from "../services/movieService";
 import type { Movie } from "../services/movieService";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 const ITEMS_PER_PAGE = 8;
 
 const MoviesPage: React.FC = () => {
+  const { isDarkTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<"Now Showing" | "Coming Soon">(
     "Now Showing"
   );
@@ -57,20 +59,20 @@ const MoviesPage: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={() => setActiveTab("Now Showing")}
-            className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
+            className={`px-6 py-2 rounded font-bold border transition-colors ${
               activeTab === "Now Showing"
-                ? "bg-black text-white"
-                : "bg-white text-black hover:bg-gray-100"
+                ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
+                : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
             }`}
           >
             Phim đang chiếu
           </button>
           <button
             onClick={() => setActiveTab("Coming Soon")}
-            className={`px-6 py-2 rounded font-bold border border-black transition-colors ${
+            className={`px-6 py-2 rounded font-bold border transition-colors ${
               activeTab === "Coming Soon"
-                ? "bg-black text-white"
-                : "bg-white text-black hover:bg-gray-100"
+                ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
+                : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
             }`}
           >
             Phim sắp chiếu
@@ -84,20 +86,20 @@ const MoviesPage: React.FC = () => {
             placeholder="Tìm kiếm phim..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-black rounded px-4 py-2 pl-10 focus:outline-none focus:ring-1 focus:ring-black"
+            className="w-full border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-900 dark:text-white rounded px-4 py-2 pl-10 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-slate-400 dark:placeholder:text-text-secondary"
           />
-          <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-500" />
+          <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400 dark:text-text-secondary" />
         </div>
       </div>
 
       {/* Grid Movies */}
       {loading ? (
-        <div className="text-center py-20">Đang tải dữ liệu...</div>
+        <div className="text-center py-20 text-slate-600 dark:text-text-secondary">Đang tải dữ liệu...</div>
       ) : (
         <>
           {/* Thông báo nếu không tìm thấy phim */}
           {filteredMovies.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-500 dark:text-text-secondary">
               Không tìm thấy phim nào phù hợp với từ khóa "{searchTerm}".
             </div>
           )}
@@ -114,7 +116,7 @@ const MoviesPage: React.FC = () => {
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => p - 1)}
-                className="flex items-center px-4 py-2 border border-black rounded disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+                className="flex items-center px-4 py-2 border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-900 dark:text-white rounded disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-border-dark/50 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" /> Prev
               </button>
@@ -125,10 +127,10 @@ const MoviesPage: React.FC = () => {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-10 h-10 border border-black rounded font-bold transition-colors ${
+                    className={`w-10 h-10 border rounded font-bold transition-colors ${
                       currentPage === pageNum
-                        ? "bg-black text-white"
-                        : "bg-white text-black hover:bg-gray-100"
+                        ? "bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary"
+                        : "bg-white dark:bg-surface-dark text-slate-900 dark:text-white border-slate-300 dark:border-border-dark hover:bg-slate-100 dark:hover:bg-border-dark/50"
                     }`}
                   >
                     {pageNum}
@@ -139,7 +141,7 @@ const MoviesPage: React.FC = () => {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => p + 1)}
-                className="flex items-center px-4 py-2 border border-black rounded disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+                className="flex items-center px-4 py-2 border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-900 dark:text-white rounded disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-border-dark/50 cursor-pointer"
               >
                 Next <ChevronRight className="w-4 h-4 ml-1" />
               </button>
