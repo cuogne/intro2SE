@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "./components/layouts/AdminLayout";
 import AdminRoute from "./components/AdminRoute";
-import AdminLogoutPage from "./pages/AdminLogoutPage";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import MoviesPage from "./pages/MoviesPage";
@@ -52,7 +51,6 @@ function App() {
           <Route path="staff" element={<AdminStaffsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="payments" element={<AdminPaymentPage />} />
-          <Route path="logout" element={<AdminLogoutPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
