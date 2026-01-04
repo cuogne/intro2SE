@@ -1,34 +1,80 @@
 ## Intro2SE - Movie Ticket System
-⚙️ Hướng dẫn cài đặt & Khởi chạy
-Quy trình chạy ứng dụng này bao gồm hai phần độc lập: Backend (Server API) và Frontend (Ứng dụng React).
 
-Bước 1: Khởi động Backend Server
-Ứng dụng Frontend không thể hoạt động nếu Backend không chạy trên cổng 3000.
+### Tổng quan
+Project "Movie Ticket System" là một hệ thống quản lý vé xem phim trực tuyến, cho phép người dùng dễ dàng đặt vé, chọn chỗ ngồi và thanh toán trực tuyến. Hệ thống cung cấp giao diện thân thiện, giúp người dùng tìm kiếm các bộ phim yêu thích, xem lịch chiếu và lựa chọn rạp phù hợp.
 
-Mở Terminal mới và di chuyển tới thư mục chứa mã nguồn Backend (ví dụ: cd backend).
+### Tech:
+- Frontend: React Typescript, Tailwind CSS
+- Backend: Node.js, Express.js
+- Database: MongoDB
+- Authentication: JWT, bcryptjs
+- Payment Gateway: ZaloPay và Momo
 
-Cài đặt thư viện: Chạy npm install.
+### Cài đặt và chạy project
+1. Clone repository:
 
-Kiểm tra file .env (tạo nếu không có): Đảm bảo file chứa các biến môi trường quan trọng:
-PORT=
+```zsh
+git clone https://github.com/cuogne/intro2SE.git
+```
 
-MONGO_URI=
+2. Cài đặt dependencies cho cả frontend và backend:
 
-JWT_SECRET=
+```zsh
+cd intro2SE
 
-Chạy lệnh:
-npm start Hoặc node index.js
+cd frontend
+npm install
 
-Đảm bảo server báo: 
-+ Server is running on port ...
-+ Connected to MongoDB.
+cd ../backend
+npm install
+```
 
-Bước 2: Khởi động Frontend App
-Mở Terminal khác và di chuyển tới thư mục Frontend (ví dụ: cd frontend).
+3. Cài ngrok [https://ngrok.com/] để tạo public URL cho callback payment:
 
-Cài đặt thư viện: Chạy npm install.
+4. Chạy ngrok để tạo public URL cho callback payment:
 
-Chạy ứng dụng: 
+```zsh
+ngrok http 3000
+```
+
+> Port phải giống với port backend server đang chạy (mặc định là 3000)
+
+Ngrok sẽ cung cấp một URL công khai ở phần `Forwarding` (ví dụ: `https://your.ngrok-free.dev`), bạn cần sử dụng URL này để cập nhật các biến môi trường `ZALOPAY_CALLBACK_URL` và `MOMO_CALLBACK_URL` trong file `.env` của backend.
+
+5. Setup .env cho backend:
+
+Tạo file `.env` trong thư mục `backend` với nội dung sau:
+
+```zsh
+PORT=3000                   # hoặc 1 port nào khác
+MONGO_URI=YOUR_MONGO_URI    # có thể là mongodb local hoặc atlas
+JWT_SECRET=your_jwt_secret_key
+ZALOPAY_CALLBACK_URL={https://your.ngrok-free.dev}/api/v1/payments/zalopay/callback
+MOMO_CALLBACK_URL={https://your.ngrok-free.dev}/api/v1/payments/momo/callback
+ZALOPAY_REDIRECT_URL=http://localhost:5173/success
+MOMO_REDIRECT_URL=http://localhost:5173/success
+```
+
+4. Chạy ngrok (mở terminal mới):
+
+```zsh
+ngrok http 3000
+```
+
+5. Chạy backend server:
+
+```zsh
+cd backend
 npm run dev
+```
 
-Truy cập trình duyệt tại địa chỉ: http://localhost:5173
+Server sẽ chạy tại: `http://localhost:3000`
+
+6. Chạy frontend (mở terminal mới):
+
+```zsh
+cd frontend
+npm run dev
+```
+
+Frontend sẽ chạy tại: `http://localhost:5173`
