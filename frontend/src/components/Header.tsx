@@ -117,12 +117,12 @@ const Header: React.FC = () => {
                                 </ConfigProvider>
                             ) : (
                                 <>
-                                    <Link to="/auth">
+                                    <Link to="/auth?mode=register">
                                         <button className="flex items-center justify-center rounded-lg h-9 px-4 bg-transparent border border-slate-300 dark:border-[#232f48] text-slate-900 dark:text-white text-sm font-bold hover:bg-slate-100 dark:hover:bg-[#232f48] transition-colors">
                                             Đăng ký
                                         </button>
                                     </Link>
-                                    <Link to="/auth">
+                                    <Link to="/auth?mode=login">
                                         <button className="flex items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
                                             Đăng nhập
                                         </button>

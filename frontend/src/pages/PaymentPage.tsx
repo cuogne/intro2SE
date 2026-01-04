@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getBookingById, type BookingItem } from "../services/bookingService";
 import { createZaloPayOrder, createMomoPayment } from "../services/paymentService";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 type PaymentMethod = "zalopay" | "momo";
 

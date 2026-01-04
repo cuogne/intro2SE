@@ -1,13 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Mail, Lock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
 
 const AuthPage: React.FC = () => {
     const { login } = useAuth(); // Lấy hàm login từ context
-    const [isRegister, setIsRegister] = useState(true);
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get("mode");
+    const [isRegister, setIsRegister] = useState(mode === "register");
     const navigate = useNavigate();
+
+    // Cập nhật state khi URL thay đổi
+    useEffect(() => {
+        if (mode === "login") {
+            setIsRegister(false);
+        } else if (mode === "register") {
+            setIsRegister(true);
+        }
+    }, [mode]);
 
     // State lưu dữ liệu form
     const [formData, setFormData] = useState({
