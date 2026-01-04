@@ -214,34 +214,42 @@ const SeatSelectionPage: React.FC = () => {
                         <div className="space-y-4 flex flex-col items-center">
                             {Object.keys(groupedSeats)
                                 .sort()
-                                .map((row) => (
-                                    <div key={row} className="flex items-center gap-2">
-                                        <div className="w-8 text-center text-gray-900 dark:text-white font-bold">{row}</div>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {groupedSeats[row]
-                                                .sort((a, b) => a.number - b.number)
-                                                .map((seat) => {
-                                                    const status = getSeatStatus(seat.row, seat.number);
+                                .map((row) => {
+                                    // Tìm số ghế tối đa trong hàng này
+                                    const maxSeatNumber = Math.max(...groupedSeats[row].map((s) => s.number));
+                                    // Tạo mảng từ 1 đến maxSeatNumber
+                                    const allSeatNumbers = Array.from({ length: maxSeatNumber }, (_, i) => i + 1);
+
+                                    return (
+                                        <div key={row} className="flex items-center gap-2">
+                                            <div className="w-8 text-center text-gray-900 dark:text-white font-bold">{row}</div>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {allSeatNumbers.map((seatNumber) => {
+                                                    // Kiểm tra xem ghế này có tồn tại trong dữ liệu không
+                                                    const seatExists = groupedSeats[row].find((s) => s.number === seatNumber);
+                                                    const status = seatExists ? getSeatStatus(row, seatNumber) : "booked";
+
                                                     return (
                                                         <button
-                                                            key={`${seat.row}-${seat.number}`}
-                                                            onClick={() => handleSeatClick(seat.row, seat.number)}
+                                                            key={`${row}-${seatNumber}`}
+                                                            onClick={() => seatExists && handleSeatClick(row, seatNumber)}
                                                             disabled={status === "booked"}
                                                             className={`w-10 h-10 rounded text-xs font-bold transition-all ${
                                                                 status === "booked"
-                                                                    ? "bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
+                                                                    ? "bg-gray-700 dark:bg-gray-900 text-white cursor-not-allowed"
                                                                     : status === "selected"
                                                                     ? "bg-primary text-white scale-110"
                                                                     : "bg-gray-200 dark:bg-[#232f48] text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-[#324467]"
                                                             }`}
                                                         >
-                                                            {seat.number}
+                                                            {seatNumber}
                                                         </button>
                                                     );
                                                 })}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                         </div>
 
                         {/* Chú thích */}
@@ -255,7 +263,7 @@ const SeatSelectionPage: React.FC = () => {
                                 <span className="text-gray-600 dark:text-text-secondary">Đã chọn</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded bg-gray-300 dark:bg-gray-700"></div>
+                                <div className="w-6 h-6 rounded bg-gray-700 dark:bg-gray-900"></div>
                                 <span className="text-gray-600 dark:text-text-secondary">Đã đặt</span>
                             </div>
                         </div>

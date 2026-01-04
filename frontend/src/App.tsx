@@ -1,10 +1,4 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-// ...existing code...
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "./components/layouts/AdminLayout";
 import AdminRoute from "./components/AdminRoute";
 import AdminLogoutPage from "./pages/AdminLogoutPage";
@@ -15,7 +9,6 @@ import MovieDetailPage from "./pages/MovieDetailPage";
 import AdminShowtimePage from "./pages/AdminShowtimePage";
 import AdminStaffsPage from "./pages/AdminStaffsPage";
 import AdminMoviePage from "./pages/AdminMoviePage";
-import AdminTicketType from "./pages/AdminTicketType";
 import AdminCinemaPage from "./pages/AdminCinemaPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminPaymentPage from "./pages/AdminPaymentPage";
@@ -24,6 +17,7 @@ import PaymentPage from "./pages/PaymentPage";
 import UserLayout from "./components/layouts/UserLayout";
 import BookingHistoryPage from "./pages/BookingHistoryPage";
 import BookingDetailPage from "./pages/BookingDetailPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
   return (
@@ -53,7 +47,6 @@ function App() {
         >
           <Route index element={<Navigate to="movies" replace />} />
           <Route path="cinema-rooms" element={<AdminCinemaPage />} />
-          <Route path="ticket-types" element={<AdminTicketType />} />
           <Route path="showtimes" element={<AdminShowtimePage />} />
           <Route path="movies" element={<AdminMoviePage />} />
           <Route path="staff" element={<AdminStaffsPage />} />
@@ -61,6 +54,7 @@ function App() {
           <Route path="payments" element={<AdminPaymentPage />} />
           <Route path="logout" element={<AdminLogoutPage />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );
