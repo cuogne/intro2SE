@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 import { Dropdown, ConfigProvider, theme } from "antd";
 import type { MenuProps } from "antd";
 import { LogoutOutlined, HistoryOutlined, SettingOutlined, HomeOutlined } from "@ant-design/icons";
@@ -8,17 +8,16 @@ import { useTheme } from "../context/ThemeContext";
 import UserAvatar from "./UserAvatar";
 import ProfileModal from "./ProfileModal";
 
-type AdminHeaderProps = {
-    onLogout?: () => void;
-};
-
-const noopVoid = () => {};
-
-export default function AdminHeader({ onLogout = noopVoid }: AdminHeaderProps) {
+export default function AdminHeader() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const { isDarkTheme } = useTheme();
     const [profileModalOpen, setProfileModalOpen] = useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate("/auth");
+    };
 
     const menuItems: MenuProps["items"] = [
         {
@@ -46,20 +45,20 @@ export default function AdminHeader({ onLogout = noopVoid }: AdminHeaderProps) {
             key: "logout",
             label: "Đăng xuất",
             icon: <LogoutOutlined />,
-            onClick: onLogout,
+            onClick: handleLogout,
             danger: true,
         },
     ];
     return (
         <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-border-dark bg-white dark:bg-[#111318] px-4 lg:px-10 py-3 shrink-0 z-20">
             <div className="flex items-center gap-4 lg:gap-8">
-                <div className="flex items-center gap-4 text-slate-900 dark:text-white">
+                <Link to="/admin" className="flex items-center gap-4 text-slate-900 dark:text-white">
                     <h2 className="text-lg font-bold leading-tight tracking-tight hidden md:block">CineMax Admin</h2>
-                </div>
+                </Link>
             </div>
 
-            <div className="flex items-center gap-4 lg:gap-8">
-                <nav className="hidden lg:flex items-center gap-6">
+            <div className="flex items-center gap-4 lg:gap-8 overflow-x-auto md:overflow-x-hidden overflow-y-hidden">
+                <nav className="flex items-center gap-6">
                     <NavLink
                         to="/admin/movies"
                         className={({ isActive }) =>
@@ -92,18 +91,7 @@ export default function AdminHeader({ onLogout = noopVoid }: AdminHeaderProps) {
                     >
                         Phòng chiếu
                     </NavLink>
-
-                    <NavLink
-                        to="/admin/ticket-types"
-                        className={({ isActive }) =>
-                            isActive
-                                ? "text-primary text-sm font-bold leading-normal border-b-2 border-primary py-4 -my-4"
-                                : "text-slate-500 dark:text-text-secondary hover:text-primary text-sm font-medium leading-normal transition-colors"
-                        }
-                    >
-                        Loại Vé
-                    </NavLink>
-
+                    
                     <NavLink
                         to="/admin/staff"
                         className={({ isActive }) =>

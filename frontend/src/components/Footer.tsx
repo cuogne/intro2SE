@@ -3,17 +3,13 @@ import React from 'react';
 const Footer: React.FC = () => {
   
   return (
-    <footer className="border-t border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark pt-16 pb-8 px-4 md:px-10">
+    <footer className="border-t border-slate-200 dark:border-border-dark bg-white dark:bg-background-dark pt-16 pb-2 px-4 md:px-10">
       <div className="max-w-[1440px] mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
             <div className="flex items-center gap-3 text-slate-900 dark:text-white mb-2">
-              <div className="size-6 text-primary">
-                <svg className="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path clipRule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fillRule="evenodd"></path>
-                </svg>
-              </div>
-              <h2 className="text-lg font-bold">ABC Cinema</h2>
+
+              <h2 className="text-lg font-bold">CineMax</h2>
             </div>
             <p className="text-slate-600 dark:text-text-secondary text-sm leading-relaxed">
               Trải nghiệm điện ảnh đỉnh cao với công nghệ chiếu phim hiện đại nhất. Hệ thống rạp chiếu phim hàng đầu Việt Nam.

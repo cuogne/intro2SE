@@ -89,7 +89,7 @@ const Header: React.FC = () => {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="flex w-full min-w-0 flex-1 bg-transparent border-none text-slate-900 dark:text-white focus:outline-none focus:ring-0 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] px-3 text-md font-normal"
-                                    placeholder="Tìm phim, rạp..."
+                                    placeholder="Tìm kiếm phim..."
                                 />
                             </form>
                         </div>
