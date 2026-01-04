@@ -29,19 +29,17 @@ cd ../backend
 npm install
 ```
 
-3. Cài ngrok [https://ngrok.com/] để tạo public URL cho callback payment:
-
-4. Chạy ngrok để tạo public URL cho callback payment:
+3. Chạy ngrok để tạo public URL cho callback payment:
 
 ```zsh
-ngrok http 3000
+cd hello-ngrok
+npm run dev
 ```
 
-> Port phải giống với port backend server đang chạy (mặc định là 3000)
 
-Ngrok sẽ cung cấp một URL công khai ở phần `Forwarding` (ví dụ: `https://your.ngrok-free.dev`), bạn cần sử dụng URL này để cập nhật các biến môi trường `ZALOPAY_CALLBACK_URL` và `MOMO_CALLBACK_URL` trong file `.env` của backend.
+Ngrok sẽ cung cấp một URL công khai ở phần `Ingress established at` (ví dụ: `https://your.ngrok-free.dev`), bạn cần sử dụng URL này để cập nhật các biến môi trường `ZALOPAY_CALLBACK_URL` và `MOMO_CALLBACK_URL` trong file `.env` của backend.
 
-5. Setup .env cho backend:
+4. Setup .env cho backend:
 
 Tạo file `.env` trong thư mục `backend` với nội dung sau:
 
@@ -53,12 +51,6 @@ ZALOPAY_CALLBACK_URL={https://your.ngrok-free.dev}/api/v1/payments/zalopay/callb
 MOMO_CALLBACK_URL={https://your.ngrok-free.dev}/api/v1/payments/momo/callback
 ZALOPAY_REDIRECT_URL=http://localhost:5173/success
 MOMO_REDIRECT_URL=http://localhost:5173/success
-```
-
-4. Chạy ngrok (mở terminal mới):
-
-```zsh
-ngrok http 3000
 ```
 
 5. Chạy backend server:
