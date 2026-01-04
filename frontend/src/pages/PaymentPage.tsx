@@ -174,30 +174,6 @@ const PaymentPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Thông tin thẻ test MoMo */}
-                        {paymentMethod === "momo" && (
-                            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg text-sm">
-                                <div className="flex items-center gap-2 mb-2 text-blue-800 dark:text-blue-300 font-bold">
-                                    <Info className="w-4 h-4" />
-                                    <span>Thẻ Test MoMo (Nhập tại trang thanh toán)</span>
-                                </div>
-                                <div className="space-y-1 text-gray-700 dark:text-gray-300 font-mono text-xs">
-                                    <p>
-                                        Số thẻ: <span className="select-all font-bold">9704000000000018</span>
-                                    </p>
-                                    <p>
-                                        Họ tên: <span className="select-all font-bold">NGUYEN VAN A</span>
-                                    </p>
-                                    <p>
-                                        Ngày PH: <span className="select-all font-bold">03/07</span>
-                                    </p>
-                                    <p>
-                                        OTP: <span className="select-all font-bold">123456</span>
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
                         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
 
                         <button
