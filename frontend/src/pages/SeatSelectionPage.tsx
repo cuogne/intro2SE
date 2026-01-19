@@ -7,7 +7,7 @@ import { Clock, ArrowLeft } from "lucide-react";
 
 const SeatSelectionPage: React.FC = () => {
     const { showtimeId } = useParams<{ showtimeId: string }>();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [showtime, setShowtime] = useState<ShowtimeDetail | null>(null);
@@ -18,6 +18,9 @@ const SeatSelectionPage: React.FC = () => {
     const [error, setError] = useState<string>("");
 
     useEffect(() => {
+        // Đợi auth context load xong
+        if (authLoading) return;
+        
         if (!user) {
             navigate("/auth");
             return;
@@ -40,7 +43,7 @@ const SeatSelectionPage: React.FC = () => {
         };
 
         loadShowtime();
-    }, [showtimeId, user, navigate]);
+    }, [showtimeId, user, authLoading, navigate]);
 
     // Timer countdown
     useEffect(() => {
@@ -113,7 +116,9 @@ const SeatSelectionPage: React.FC = () => {
             setError("Vui lòng chọn ít nhất một ghế");
             return;
         }
-        if (bookingId) {
+        if (bookingId && showtimeId) {
+            // Lưu showtimeId để có thể quay lại trang chọn ghế
+            localStorage.setItem(`booking_${bookingId}_showtime`, showtimeId);
             navigate(`/payment/${bookingId}`);
         }
     };

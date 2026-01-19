@@ -7,7 +7,20 @@ const PaymentSuccessPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     // Backend cần config redirect về: http://localhost:5173/payment/success?bookingId=...
-    const bookingId = searchParams.get("bookingId");
+    let bookingId = searchParams.get("bookingId");
+
+    const extraData = searchParams.get("extraData");
+    if (!bookingId && extraData) {
+        try {
+            const decoded = atob(extraData);
+            const data = JSON.parse(decoded);
+            if (data.bookingId) {
+                bookingId = data.bookingId;
+            }
+        } catch (e) {
+            console.error("Failed to parse extraData", e);
+        }
+    }
 
     // Nếu dùng MoMo, nó có thể trả về resultCode. 0 là thành công.
     const resultCode = searchParams.get("resultCode");
@@ -21,24 +34,26 @@ const PaymentSuccessPage: React.FC = () => {
                 return;
             }
 
-            // Nếu MoMo trả về resultCode khác 0, tức là thất bại
+            // resultCode momo khác 0 -> thất bại
             if (resultCode && resultCode !== "0") {
                 setStatus("failed");
                 return;
             }
 
+            // status zalopay khac 1 -> thất bại
+            const zalopayStatus = searchParams.get("status");
+            if (zalopayStatus && zalopayStatus !== "1") {
+                setStatus("failed");
+                return;
+            }
+
             try {
-                // Kiểm tra lại trạng thái booking từ backend (vì callback ngrok đã chạy)
                 const booking = await getBookingById(bookingId);
                 if (booking && booking.status === "confirmed") {
                     setStatus("success");
                     // Tự động chuyển trang sau 5s
                     setTimeout(() => navigate(`/booking/${bookingId}`), 5000);
                 } else {
-                    // Có thể callback chưa tới kịp, hoặc thanh toán lỗi
-                    // Ở đây mình tạm coi là success nếu không có mã lỗi rõ ràng,
-                    // nhưng thực tế nên có cơ chế long-polling để check status.
-                    // Để đơn giản cho bài tập, nếu không có resultCode lỗi thì coi như chờ xác nhận
                     setStatus(booking?.status === "confirmed" ? "success" : "loading");
 
                     // Nếu vẫn loading (pending), thử check lại sau 2s

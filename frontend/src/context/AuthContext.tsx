@@ -10,6 +10,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
+    loading: boolean;
     login: (userData: User, token: string) => void;
     logout: () => void;
     updateUser: (userData: User) => void;
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
     // Khi F5 trang, tự động lấy user từ localStorage nếu có
     useEffect(() => {
@@ -27,6 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (storedUser && token) {
             setUser(JSON.parse(storedUser));
         }
+        setLoading(false);
     }, []);
 
     // Hàm Đăng nhập (Lưu vào State + LocalStorage)
@@ -49,7 +52,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem("user", JSON.stringify(userData));
     };
 
-    return <AuthContext.Provider value={{ user, login, logout, updateUser }}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>{children}</AuthContext.Provider>;
 };
 
 // Hook để các component khác gọi dùng nhanh

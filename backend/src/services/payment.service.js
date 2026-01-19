@@ -84,9 +84,14 @@ const createZalopayOrder = async (bookingId) => {
 
     const description = `Thanh toán vé xem phim - ${movieTitle} tại ${cinemaName} - Suất chiếu: ${startTime}`.trim();
 
+    const redirectUrlBase = process.env.ZALOPAY_REDIRECT_URL || 'https://facebook.com';
+    const redirectUrl = redirectUrlBase.includes('?')
+        ? `${redirectUrlBase}&bookingId=${bookingId}`
+        : `${redirectUrlBase}?bookingId=${bookingId}`;
+
     const embed_data = {
         //sau khi hoàn tất thanh toán sẽ đi vào link này (thường là link web thanh toán thành công của mình)
-        redirecturl: process.env.ZALOPAY_REDIRECT_URL || 'https://facebook.com',
+        redirecturl: redirectUrl,
     };
 
     const transID = Math.floor(Math.random() * 1000000);
@@ -151,11 +156,13 @@ const createMomoOrder = async (bookingId) => {
     const requestId = partnerCode + new Date().getTime();
     const orderId = requestId;
     const orderInfo = `Thanh toán vé ${booking.showtime.movie.title}`;
-    const redirectUrl = momoConfig.redirectUrl;
+    const redirectUrl = `${momoConfig.redirectUrl}?bookingId=${bookingId}`;
     const ipnUrl = momoConfig.ipnUrl;
     const amount = booking.totalPrice; // Number
     const requestType = momoConfig.requestType;
-    const extraData = momoConfig.extraData;
+    // Encode bookingId into extraData to persist through redirect
+    const extraDataObj = { bookingId: bookingId.toString() };
+    const extraData = Buffer.from(JSON.stringify(extraDataObj)).toString('base64');
     const lang = 'vi';
 
     const signature = createMomoSignature(

@@ -5,20 +5,15 @@ import { authService } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
 
 const AuthPage: React.FC = () => {
-    const { login } = useAuth(); // Lấy hàm login từ context
-    const [searchParams] = useSearchParams();
-    const mode = searchParams.get("mode");
-    const [isRegister, setIsRegister] = useState(mode === "register");
+    const { user, loading: authLoading, login } = useAuth();
+    const [isRegister, setIsRegister] = useState(true);
     const navigate = useNavigate();
 
-    // Cập nhật state khi URL thay đổi
     useEffect(() => {
-        if (mode === "login") {
-            setIsRegister(false);
-        } else if (mode === "register") {
-            setIsRegister(true);
+        if (!authLoading && user) {
+            navigate("/");
         }
-    }, [mode]);
+    }, [user, authLoading, navigate]);
 
     // State lưu dữ liệu form
     const [formData, setFormData] = useState({
@@ -28,6 +23,10 @@ const AuthPage: React.FC = () => {
         confirmPassword: "",
     });
     const [error, setError] = useState("");
+
+    if (authLoading || user) {
+        return null;
+    }
 
     // Xử lý khi nhập liệu
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,9 +96,8 @@ const AuthPage: React.FC = () => {
                         setIsRegister(false);
                         setError("");
                     }}
-                    className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${
-                        !isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
-                    }`}
+                    className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${!isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
+                        }`}
                 >
                     Đăng nhập
                 </button>
@@ -108,9 +106,8 @@ const AuthPage: React.FC = () => {
                         setIsRegister(true);
                         setError("");
                     }}
-                    className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${
-                        isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
-                    }`}
+                    className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
+                        }`}
                 >
                     Đăng ký
                 </button>

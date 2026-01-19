@@ -9,7 +9,7 @@ type PaymentMethod = "zalopay" | "momo";
 
 const PaymentPage: React.FC = () => {
     const { bookingId } = useParams<{ bookingId: string }>();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [booking, setBooking] = useState<BookingItem | null>(null);
@@ -17,8 +17,12 @@ const PaymentPage: React.FC = () => {
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string>("");
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("momo");
+    const [showtimeId, setShowtimeId] = useState<string | null>(null);
 
     useEffect(() => {
+        // Đợi auth context load xong
+        if (authLoading) return;
+        
         if (!user) {
             navigate("/auth");
             return;
@@ -38,6 +42,9 @@ const PaymentPage: React.FC = () => {
                         return;
                     }
                     setBooking(data);
+                    // Lấy showtimeId từ localStorage
+                    const savedShowtimeId = localStorage.getItem(`booking_${bookingId}_showtime`);
+                    setShowtimeId(savedShowtimeId);
                 } else {
                     setError("Không tìm thấy đơn đặt vé");
                 }
@@ -48,7 +55,7 @@ const PaymentPage: React.FC = () => {
             }
         };
         loadBooking();
-    }, [bookingId, user, navigate]);
+    }, [bookingId, user, authLoading, navigate]);
 
     const handlePayment = async () => {
         if (!bookingId) return;
@@ -102,10 +109,18 @@ const PaymentPage: React.FC = () => {
     const cinemaName = booking.cinema || "Đang cập nhật";
     const showTime = booking.startTime ? new Date(booking.startTime).toLocaleString("vi-VN") : "Unknown";
 
+    const handleBackToSeatSelection = () => {
+        if (showtimeId) {
+            navigate(`/seats/${showtimeId}`);
+        } else {
+            navigate(-1);
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 mb-6 text-gray-900 dark:text-white hover:text-primary">
-                <ArrowLeft className="w-5 h-5" /> Quay lại
+            <button onClick={handleBackToSeatSelection} className="flex items-center gap-2 mb-6 text-gray-900 dark:text-white hover:text-primary">
+                <ArrowLeft className="w-5 h-5" /> Quay lại chọn ghế
             </button>
 
             <div className="bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-[#324467] rounded-xl p-8 shadow-sm">
@@ -169,7 +184,7 @@ const PaymentPage: React.FC = () => {
                                 <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png" alt="ZaloPay" className="w-10 h-10 rounded object-contain" />
                                 <div>
                                     <p className="font-bold text-gray-900 dark:text-white">ZaloPay</p>
-                                    <p className="text-xs text-gray-500">Đang bảo trì (Có thể lỗi)</p>
+                                    <p className="text-xs text-gray-500">Thanh toán qua QR ZaloPay</p>
                                 </div>
                             </div>
                         </div>

@@ -17,6 +17,7 @@ import UserLayout from "./components/layouts/UserLayout";
 import BookingHistoryPage from "./pages/BookingHistoryPage";
 import BookingDetailPage from "./pages/BookingDetailPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/movie/:id" element={<MovieDetailPage />} />
           <Route path="/seats/:showtimeId" element={<SeatSelectionPage />} />
           <Route path="/payment/:bookingId" element={<PaymentPage />} />
+          <Route path="/payment/success" element={<PaymentSuccessPage />} />
           <Route path="/bookings" element={<BookingHistoryPage />} />
           <Route path="/booking/:bookingId" element={<BookingDetailPage />} />
 
