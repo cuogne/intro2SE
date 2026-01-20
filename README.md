@@ -49,8 +49,8 @@ MONGO_URI=YOUR_MONGO_URI    # có thể là mongodb local hoặc atlas
 JWT_SECRET=your_jwt_secret_key
 ZALOPAY_CALLBACK_URL={https://your.ngrok-free.dev}/api/v1/payments/zalopay/callback
 MOMO_CALLBACK_URL={https://your.ngrok-free.dev}/api/v1/payments/momo/callback
-ZALOPAY_REDIRECT_URL=http://localhost:5173/success
-MOMO_REDIRECT_URL=http://localhost:5173/success
+ZALOPAY_REDIRECT_URL=http://localhost:5173/payment/success
+MOMO_REDIRECT_URL=http://localhost:5173/payment/success
 ```
 
 5. Chạy backend server:
@@ -70,3 +70,15 @@ npm run dev
 ```
 
 Frontend sẽ chạy tại: `http://localhost:5173`
+
+7. Thẻ test thanh toán:
+
+App tích hợp 2 môi trường thanh toán trong Sandbox của ZaloPay và Momo, hãy sử dụng các tài khoản test sau để thanh toán khi đặt vé:
+
+| **Phương thức** | **Loại**         | **Số thẻ**                | **Hạn sử dụng** | **CVV** | **Tên**          |
+|------------------|------------------|---------------------------|------------------|---------|------------------|
+| **Zalo**         | Visa/Master       | 4111 1111 1111 1111       | 03/30            | 123     | NGUYEN VAN A     |
+|                  | ATM (Napas)      | 9704 5400 0000 0062       | 12/20            |         | NGUYEN VAN A     |
+|                  | Quét QR Code     | [Tải ZaloPay sandbox và làm theo hướng dẫn trong link](https://docs.zalopay.vn/docs/developer-tools/test-instructions/test-wallets/) |                  |         |                  |
+| **Momo**         | ATM (Napas)      | 9704 0000 0000 0018       | 12/20            |         | NGUYEN VAN A     |
+|                  | Quét QR Code     | [Tải Momo sandbox](https://developers.momo.vn/v3/download/) và làm theo hướng dẫn trong link sau: [Link](https://developers.momo.vn/v3/vi/docs/payment/onboarding/test-instructions/) |                  |         |                  |
