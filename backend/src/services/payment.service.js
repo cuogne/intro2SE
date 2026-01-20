@@ -104,7 +104,7 @@ const createZalopayOrder = async (bookingId) => {
         embed_data: JSON.stringify(embed_data),
         amount: amount,
         description: description,
-        bank_code: 'zalopayapp', // để trống thì sẽ thanh toán thêm mấy cái khác
+        bank_code: '', // để trống sẽ ra nhiều lựa chọn thanh toán, còn để zalopayapp nó ra mỗi QR
         //khi thanh toán xong, zalopay server sẽ POST đến url này để thông báo cho server của mình
         //Chú ý: cần dùng ngrok để public url thì Zalopay Server mới call đến được
         callback_url: zalopayConfig.callbackUrl
