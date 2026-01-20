@@ -6,7 +6,9 @@ import { useAuth } from "../context/AuthContext";
 
 const AuthPage: React.FC = () => {
     const { user, loading: authLoading, login } = useAuth();
-    const [isRegister, setIsRegister] = useState(true);
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get("mode");
+    const [isRegister, setIsRegister] = useState(mode !== "login");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -14,6 +16,12 @@ const AuthPage: React.FC = () => {
             navigate("/");
         }
     }, [user, authLoading, navigate]);
+
+    // Cập nhật isRegister khi URL thay đổi
+    useEffect(() => {
+        const currentMode = searchParams.get("mode");
+        setIsRegister(currentMode !== "login");
+    }, [searchParams]);
 
     // State lưu dữ liệu form
     const [formData, setFormData] = useState({
@@ -95,6 +103,7 @@ const AuthPage: React.FC = () => {
                     onClick={() => {
                         setIsRegister(false);
                         setError("");
+                        navigate("/auth?mode=login");
                     }}
                     className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${!isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
                         }`}
@@ -105,6 +114,7 @@ const AuthPage: React.FC = () => {
                     onClick={() => {
                         setIsRegister(true);
                         setError("");
+                        navigate("/auth?mode=register");
                     }}
                     className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
                         }`}
