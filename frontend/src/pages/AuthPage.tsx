@@ -82,7 +82,7 @@ const AuthPage: React.FC = () => {
                     // Gọi hàm login của Context để cập nhật Header ngay lập tức
                     login(res.data.user, res.data.token);
                 }
-                navigate(-1);
+                navigate("/");
             }
         } catch (err: any) {
             console.error(err);
