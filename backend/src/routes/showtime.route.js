@@ -5,7 +5,7 @@ const auth = require('../middleware/auth.middleware');
 const { authorizeAdmin, authorizeUser } = require('../middleware/authorization.middleware');
 
 router.get('/', showtimeController.getShowtimesByQuery)
-router.get('/:id', showtimeController.getShowtimeById)
+router.get('/:id', auth, showtimeController.getShowtimeById)
 router.post('/', auth, authorizeAdmin, showtimeController.createShowtime)
 router.put('/:id', auth, authorizeAdmin, showtimeController.updateShowtime)
 router.delete('/:id', auth, authorizeAdmin, showtimeController.deleteShowtime)

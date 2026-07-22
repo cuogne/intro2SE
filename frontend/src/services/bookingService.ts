@@ -105,7 +105,9 @@ export const fetchBookingStatistics = async (params: {
 
 export interface SeatReservationResponse {
   bookingId: string;
-  holdExpiresAt: string; // ISO string
+  holdExpiresAt: string;
+  seats?: Seat[];
+  isNewBooking?: boolean;
 }
 
 export interface Booking {
@@ -146,14 +148,13 @@ export const updateBookingSeats = async (
   bookingId: string,
   action: "add" | "remove",
   seats: Seat[]
-): Promise<boolean> => {
+): Promise<{ deleted?: boolean }> => {
   try {
-    // SỬA: Đổi method từ PUT sang PATCH để khớp backend
-    await api.patch(`/v1/bookings/${bookingId}/seats`, {
+    const response = await api.patch(`/v1/bookings/${bookingId}/seats`, {
       action,
       seats,
     });
-    return true;
+    return response.data.data || {};
   } catch (error) {
     console.error("Lỗi cập nhật ghế:", error);
     throw error;

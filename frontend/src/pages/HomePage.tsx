@@ -62,12 +62,12 @@ const HomePage: React.FC = () => {
         }
     };
 
-    const getRating = (movie: Movie): number => {
+    const getRating = (_movie: Movie): number => {
         // Mock rating - in real app, this would come from the API
         return 8.5;
     };
 
-    const getAgeRating = (movie: Movie): string => {
+    const getAgeRating = (_movie: Movie): string => {
         // Mock age rating - in real app, this would come from the API
         return "P";
     };

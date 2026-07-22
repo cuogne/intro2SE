@@ -32,6 +32,12 @@ export interface ShowtimeListItem {
 }
 
 // Full detail returned by /v1/showtimes/:id
+export interface PendingBookingInfo {
+  bookingId: string;
+  seats: { row: string; number: number }[];
+  holdExpiresAt: string;
+}
+
 export interface ShowtimeDetail {
   _id: string;
   movie: Movie;
@@ -42,6 +48,7 @@ export interface ShowtimeDetail {
   totalSeats: number;
   availableSeats: number;
   seats?: ShowtimeSeat[];
+  pendingBooking?: PendingBookingInfo;
 }
 
 export interface Pagination {

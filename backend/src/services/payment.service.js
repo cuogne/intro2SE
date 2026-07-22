@@ -1,8 +1,9 @@
 const CryptoJS = require('crypto-js');
-const moment = require('moment'); // npm install moment
+const moment = require('moment');
 const zalopayConfig = require('../config/zalopay.config');
 const momoConfig = require('../config/momo.config');
 const Booking = require('../models/booking.model');
+const seatHold = require('./seatHold.service');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -269,6 +270,7 @@ const handleCallback = async (dataStr, reqMac) => {
         };
 
         await booking.save();
+        await seatHold.releaseSeats(booking.showtime, booking.seat);
         console.log("thanh toan thanh cong")
 
         return { return_code: 1, return_message: 'success' };
@@ -317,6 +319,7 @@ const handleMomoCallback = async (callbackData) => {
                     callbackTime: new Date()
                 };
                 await booking.save();
+                await seatHold.releaseSeats(booking.showtime, booking.seat);
             }
         }
 

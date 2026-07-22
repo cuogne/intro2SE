@@ -27,7 +27,8 @@ const getShowtimesByQuery = async (req, res) => {
 const getShowtimeById = async (req, res) => {
     try {
         const { id } = req.params;
-        const showtime = await showtimeService.getShowtimeById(id);
+        const userId = req.user?.id;
+        const showtime = await showtimeService.getShowtimeById(id, userId);
 
         if (!showtime) {
             return res.status(404).json({

@@ -18,11 +18,10 @@ const SeatSelectionPage: React.FC = () => {
     const [error, setError] = useState<string>("");
 
     useEffect(() => {
-        // Đợi auth context load xong
         if (authLoading) return;
         
         if (!user) {
-            navigate("/auth");
+            navigate("/auth?redirect=" + encodeURIComponent("/seats/" + showtimeId));
             return;
         }
 
@@ -36,6 +35,15 @@ const SeatSelectionPage: React.FC = () => {
             const data = await fetchShowtimeById(showtimeId);
             if (data) {
                 setShowtime(data);
+
+                if (data.pendingBooking) {
+                    setBookingId(data.pendingBooking.bookingId);
+                    setSelectedSeats(data.pendingBooking.seats);
+                    const expiresIn = new Date(data.pendingBooking.holdExpiresAt).getTime() - Date.now();
+                    if (expiresIn > 0) {
+                        setTimeLeft(Math.floor(expiresIn / 1000));
+                    }
+                }
             } else {
                 setError("Không tìm thấy suất chiếu");
             }
@@ -44,6 +52,19 @@ const SeatSelectionPage: React.FC = () => {
 
         loadShowtime();
     }, [showtimeId, user, authLoading, navigate]);
+
+    const clearBookingSession = (sid: string) => {
+        try {
+            localStorage.removeItem("booking_session_" + sid);
+        } catch { }
+    };
+
+    useEffect(() => {
+        if (showtimeId && bookingId) {
+            const data = { bookingId, selectedSeats, holdExpiresAt: new Date(Date.now() + timeLeft * 1000).toISOString(), savedAt: Date.now() };
+            try { localStorage.setItem("booking_session_" + showtimeId, JSON.stringify(data)); } catch { }
+        }
+    }, [bookingId, selectedSeats, showtimeId]);
 
     // Timer countdown
     useEffect(() => {
@@ -56,6 +77,7 @@ const SeatSelectionPage: React.FC = () => {
                     setError("Hết thời gian giữ ghế. Vui lòng chọn lại.");
                     setSelectedSeats([]);
                     setBookingId(null);
+                    if (showtimeId) clearBookingSession(showtimeId);
                     return 0;
                 }
                 return prev - 1;
@@ -71,43 +93,88 @@ const SeatSelectionPage: React.FC = () => {
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
+    const [processingSeat, setProcessingSeat] = useState<boolean>(false);
+
     const handleSeatClick = async (row: string, number: number) => {
-        if (!showtime) return;
+        if (!showtime || processingSeat) return;
+        setProcessingSeat(true);
 
         const seat: Seat = { row, number };
-        const isSelected = selectedSeats.some((s) => s.row === row && s.number === number);
-        const seatInfo = showtime.seats?.find((s) => s.row === row && s.number === number);
-
-        if (seatInfo?.isBooked) {
-            setError("Ghế này đã được đặt");
-            return;
-        }
+        const isSelected = selectedSeats.some((s) => s.row === row && Number(s.number) === number);
 
         setError("");
 
+        if (isSelected) {
+            setSelectedSeats((prev) => prev.filter((s) => !(s.row === row && Number(s.number) === number)));
+        } else {
+            setSelectedSeats((prev) => [...prev, seat]);
+        }
+
+        setShowtime((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                seats: prev.seats?.map((s) =>
+                    s.row === row && Number(s.number) === number
+                        ? { ...s, status: isSelected ? "available" : "held_by_me" }
+                        : s
+                ),
+            };
+        });
+
         try {
             if (isSelected) {
-                // Xóa ghế
                 if (bookingId) {
-                    await updateBookingSeats(bookingId, "remove", [seat]);
+                    const res = await updateBookingSeats(bookingId, "remove", [seat]);
+                    if (res.deleted) {
+                        setBookingId(null);
+                        setTimeLeft(300);
+                    }
                 }
-                setSelectedSeats((prev) => prev.filter((s) => !(s.row === row && s.number === number)));
             } else {
-                // Thêm ghế
                 if (bookingId) {
-                    // Thêm vào booking hiện có
                     await updateBookingSeats(bookingId, "add", [seat]);
                 } else {
-                    // Tạo booking mới
                     const result = await reserveSeats(showtimeId!, [seat]);
                     setBookingId(result.bookingId);
                     const expiresIn = new Date(result.holdExpiresAt).getTime() - Date.now();
                     setTimeLeft(Math.floor(expiresIn / 1000));
+                    if (result.seats && !result.isNewBooking) {
+                        setSelectedSeats(result.seats);
+                    }
                 }
-                setSelectedSeats((prev) => [...prev, seat]);
             }
         } catch (err: any) {
-            setError(err.message || "Có lỗi xảy ra khi chọn ghế");
+            if (isSelected) {
+                setSelectedSeats((prev) => [...prev, seat]);
+                setShowtime((prev) => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        seats: prev.seats?.map((s) =>
+                            s.row === row && Number(s.number) === number
+                                ? { ...s, status: "held_by_me" }
+                                : s
+                        ),
+                    };
+                });
+            } else {
+                setSelectedSeats((prev) => prev.filter((s) => !(s.row === row && Number(s.number) === number)));
+                setShowtime((prev) => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        seats: prev.seats?.map((s) =>
+                            s.row === row && Number(s.number) === number
+                                ? { ...s, status: "available" }
+                                : s
+                        ),
+                    };
+                });
+            }
+            setError(err.response?.data?.message || err.message || "Có lỗi xảy ra khi chọn ghế");
+        } finally {
+            setProcessingSeat(false);
         }
     };
 
@@ -124,9 +191,9 @@ const SeatSelectionPage: React.FC = () => {
     };
 
     const getSeatStatus = (row: string, number: number) => {
-        const seatInfo = showtime?.seats?.find((s) => s.row === row && s.number === number);
-        if (seatInfo?.isBooked) return "booked";
-        if (selectedSeats.some((s) => s.row === row && s.number === number)) return "selected";
+        if (selectedSeats.some((s) => s.row === row && Number(s.number) === number)) return "selected";
+        const seatInfo = showtime?.seats?.find((s) => s.row === row && Number(s.number) === number);
+        if (!seatInfo || seatInfo.status === "booked" || seatInfo.status === "reserved") return "booked";
         return "available";
     };
 
@@ -200,13 +267,20 @@ const SeatSelectionPage: React.FC = () => {
                             </p>
                         </div>
 
-                        {/* Timer */}
-                        {bookingId && timeLeft > 0 && (
-                            <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-yellow-400" />
-                                <span className="text-yellow-400 font-bold">Thời gian giữ ghế: {formatTime(timeLeft)}</span>
-                            </div>
-                        )}
+                        {/* Timer Banner (Fixed height to prevent layout shift) */}
+                        <div className="min-h-[58px] mb-6 flex items-center">
+                            {bookingId && timeLeft > 0 ? (
+                                <div className="w-full p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg flex items-center gap-2 transition-all">
+                                    <Clock className="w-5 h-5 text-yellow-400 animate-pulse" />
+                                    <span className="text-yellow-400 font-bold">Thời gian giữ ghế: {formatTime(timeLeft)}</span>
+                                </div>
+                            ) : (
+                                <div className="w-full p-4 bg-gray-100 dark:bg-[#232f48]/50 border border-gray-200 dark:border-[#324467]/50 rounded-lg flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                                    <Clock className="w-5 h-5 opacity-50" />
+                                    <span>Chọn ghế để bắt đầu giữ chỗ (tối đa 5 phút)</span>
+                                </div>
+                            )}
+                        </div>
 
                         {error && <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">{error}</div>}
 
@@ -231,21 +305,21 @@ const SeatSelectionPage: React.FC = () => {
                                             <div className="flex gap-2 flex-wrap">
                                                 {allSeatNumbers.map((seatNumber) => {
                                                     // Kiểm tra xem ghế này có tồn tại trong dữ liệu không
-                                                    const seatExists = groupedSeats[row].find((s) => s.number === seatNumber);
+                                                    const seatExists = groupedSeats[row].find((s) => Number(s.number) === seatNumber);
                                                     const status = seatExists ? getSeatStatus(row, seatNumber) : "booked";
 
                                                     return (
                                                         <button
                                                             key={`${row}-${seatNumber}`}
                                                             onClick={() => seatExists && handleSeatClick(row, seatNumber)}
-                                                            disabled={status === "booked"}
-                                                            className={`w-10 h-10 rounded text-xs font-bold transition-all ${
-                                                                status === "booked"
-                                                                    ? "bg-gray-700 dark:bg-gray-900 text-white cursor-not-allowed"
-                                                                    : status === "selected"
-                                                                    ? "bg-primary text-white scale-110"
-                                                                    : "bg-gray-200 dark:bg-[#232f48] text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-[#324467]"
-                                                            }`}
+                                                             disabled={status === "booked"}
+                                                      className={`w-10 h-10 rounded text-xs font-bold transition-all ${
+                                                                  status === "booked"
+                                                                      ? "bg-gray-700 dark:bg-gray-900 text-white cursor-not-allowed"
+                                                                      : status === "selected"
+                                                                      ? "bg-primary text-white scale-110"
+                                                                      : "bg-gray-200 dark:bg-[#232f48] text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-[#324467]"
+                                                              }`}
                                                         >
                                                             {seatNumber}
                                                         </button>

@@ -1,6 +1,7 @@
 const Showtime = require('../models/showtime.model')
-const Cinema = require('../models/cinema.model') // thêm dòng này
+const Cinema = require('../models/cinema.model')
 const Booking = require('../models/booking.model')
+const seatHold = require('./seatHold.service')
 
 const getShowtimesByQuery = async (movie, date, cinema, page = 1, limit = 10) => {
   const filter = {}
@@ -38,7 +39,7 @@ const getShowtimesByQuery = async (movie, date, cinema, page = 1, limit = 10) =>
   }
 }
 
-const getShowtimeById = async (id) => {
+const getShowtimeById = async (id, userId = null) => {
   const showtime = await Showtime.findById(id)
     .populate('movie')
     .populate('cinema');
@@ -47,58 +48,72 @@ const getShowtimeById = async (id) => {
     return null;
   }
 
-  // Lấy tất cả booking active (confirmed hoặc pending còn hiệu lực)
   const now = new Date();
-  const activeBookings = await Booking.find({
-    showtime: id,
-    $or: [
-      { status: 'confirmed' },
-      {
-        status: 'pending',
-        holdExpiresAt: { $gt: now } // Chỉ tính booking pending còn hiệu lực
-      }
-    ]
-  });
 
-  // Tạo map để đánh dấu ghế đã được book/reserve
+  const expiredBookings = await Booking.find({
+    showtime: id,
+    status: 'pending',
+    holdExpiresAt: { $lte: now }
+  });
+  if (expiredBookings.length > 0) {
+    for (const b of expiredBookings) {
+      await seatHold.releaseSeats(b.showtime, b.seat);
+      await Booking.findByIdAndDelete(b._id);
+    }
+  }
+
+  const [confirmedBookings, heldSeats, userPendingBooking] = await Promise.all([
+    Booking.find({ showtime: id, status: 'confirmed' }),
+    seatHold.getHeldSeatsForShowtime(id),
+    userId
+      ? Booking.findOne({
+          user: userId,
+          showtime: id,
+          status: 'pending',
+          holdExpiresAt: { $gt: now }
+        }).lean()
+      : null,
+  ]);
+
   const seatStatusMap = new Map();
 
-  // Đánh dấu ghế confirmed (đã thanh toán)
-  activeBookings
-    .filter(b => b.status === 'confirmed')
-    .forEach(booking => {
-      booking.seat.forEach(seat => {
-        const key = `${seat.row}-${seat.number}`;
-        seatStatusMap.set(key, 'booked');
-      });
+  confirmedBookings.forEach(booking => {
+    booking.seat.forEach(seat => {
+      const key = `${seat.row}-${seat.number}`;
+      seatStatusMap.set(key, 'booked');
     });
+  });
 
-  // Đánh dấu ghế pending (đang giữ)
-  activeBookings
-    .filter(b => b.status === 'pending' && b.holdExpiresAt > now)
-    .forEach(booking => {
-      booking.seat.forEach(seat => {
-        const key = `${seat.row}-${seat.number}`;
-        if (!seatStatusMap.has(key)) {
-          seatStatusMap.set(key, 'reserved');
-        }
-      });
-    });
+  const userIdStr = userId ? String(userId) : null;
 
-  // cap nhat trang thai ghe trong showtime
+  Object.entries(heldSeats).forEach(([key, holder]) => {
+    if (!seatStatusMap.has(key)) {
+      const isHeldByMe = Boolean(userIdStr && String(holder) === userIdStr);
+      seatStatusMap.set(key, isHeldByMe ? 'held_by_me' : 'reserved');
+    }
+  });
+
   const seatsWithStatus = showtime.seats.map(seat => {
     const key = `${seat.row}-${seat.number}`;
     const status = seatStatusMap.get(key) || 'available';
 
     return {
       ...seat.toObject ? seat.toObject() : seat,
-      status: status, // 'available', 'reserved', 'booked'
+      status: status,
       isBooked: status === 'booked' || status === 'reserved'
     };
   });
 
   const showtimeObj = showtime.toObject ? showtime.toObject() : showtime;
   showtimeObj.seats = seatsWithStatus;
+
+  if (userPendingBooking) {
+    showtimeObj.pendingBooking = {
+      bookingId: userPendingBooking._id,
+      seats: userPendingBooking.seat,
+      holdExpiresAt: userPendingBooking.holdExpiresAt,
+    };
+  }
 
   return showtimeObj;
 };

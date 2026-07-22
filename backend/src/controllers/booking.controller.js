@@ -64,6 +64,7 @@ const reserveSeats = async (req, res) => {
         holdExpiresAt: result.holdExpiresAt,
         expiresInSeconds: result.expiresInSeconds,
         isNewBooking: result.isNewBooking,
+        seats: result.booking.seat,
         message: result.isNewBooking
           ? 'Seats reserved for 5 minutes'
           : 'Seats added to existing reservation'
