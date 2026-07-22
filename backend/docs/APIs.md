@@ -29,7 +29,7 @@ headers: {
 }
 ```
 
-**Token Expiry:** Token có thời hạn 1 giờ. Sau khi hết hạn, cần login lại để lấy token mới.
+**Token Expiry:** Access token có thời hạn 1 giờ. Refresh token có thời hạn 7 ngày. Khi access token hết hạn, dùng refresh token để lấy access token mới qua endpoint `/api/v1/auth/refresh`.
 
 ---
 
@@ -126,8 +126,9 @@ headers: {
 ### Authentication APIs
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | [`/api/auth/register`](#11-đăng-ký-tài-khoản) | Đăng ký tài khoản mới (username, email, password) | No |
-| POST | [`/api/auth/login`](#12-đăng-nhập) | Đăng nhập và nhận token | No |
+| POST | [`/api/v1/auth/register`](#11-đăng-ký-tài-khoản) | Đăng ký tài khoản mới (username, email, password) | No |
+| POST | [`/api/v1/auth/login`](#12-đăng-nhập) | Đăng nhập và nhận access + refresh token | No |
+| POST | [`/api/v1/auth/refresh`](#13-refresh-token) | Lấy access token mới bằng refresh token | No |
 
 ### User APIs
 | Method | Endpoint | Description | Auth Required |
@@ -189,7 +190,7 @@ headers: {
 
 #### 1.1. Đăng ký tài khoản
 
-**Endpoint:** `POST /api/auth/register`
+**Endpoint:** `POST /api/v1/auth/register`
 
 **Authentication:** Không cần
 
@@ -223,7 +224,7 @@ headers: {
 
 #### 1.2. Đăng nhập
 
-**Endpoint:** `POST /api/auth/login`
+**Endpoint:** `POST /api/v1/auth/login`
 
 **Authentication:** Không cần
 
@@ -248,12 +249,40 @@ headers: {
       "email": "john@example.com",
       "role": "user"
     },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "a1b2c3d4e5f6..."
   }
 }
 ```
 
-Token này sẽ được lưu lại vào cookie của browser để sử dụng cho các request sau này.
+Access token có thời hạn 1 giờ, refresh token có thời hạn 7 ngày. Khi access token hết hạn, dùng refresh token để lấy access token mới qua endpoint `/api/v1/auth/refresh`.
+
+---
+
+#### 1.3. Refresh Token
+
+**Endpoint:** `POST /api/v1/auth/refresh`
+
+**Authentication:** Không cần
+
+**Mô tả:** API này dùng để lấy access token mới khi access token cũ hết hạn.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "a1b2c3d4e5f6..."
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
 
 ---
 

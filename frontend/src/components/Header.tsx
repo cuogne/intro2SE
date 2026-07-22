@@ -15,8 +15,8 @@ const Header: React.FC = () => {
     const [profileModalOpen, setProfileModalOpen] = useState(false);
     const { isDarkTheme } = useTheme();
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate("/auth");
     };
 

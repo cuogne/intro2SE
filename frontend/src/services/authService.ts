@@ -1,41 +1,47 @@
 import api from './api';
 
-// Kiểu dữ liệu gửi đi khi đăng ký
 export interface RegisterPayload {
-  username: string; // Hoặc fullName tùy backend
+  username: string;
   email: string;   
   password: string;
 }
 
-// Kiểu dữ liệu gửi đi khi đăng nhập
 export interface LoginPayload {
-  username: string; // Hoặc email tùy backend setup
+  username: string;
   password: string;
 }
 
 export const authService = {
   register: async (data: RegisterPayload) => {
-    // API trả về: { success: true, data: newUser }
-    const response = await api.post('/auth/register', data);
+    const response = await api.post('/v1/auth/register', data);
     return response.data;
   },
 
   login: async (data: LoginPayload) => {
-    const response = await api.post('/auth/login', data);
+    const response = await api.post('/v1/auth/login', data);
 
     const responseData = response.data;
-    // Lưu token vào localStorage nếu đăng nhập thành công
-    if (responseData.success && responseData.data && responseData.data.token) {
-        const { token, user } = responseData.data;
-        
-        localStorage.setItem('accessToken', token);
+    if (responseData.success && responseData.data) {
+        const { accessToken, refreshToken, user } = responseData.data;
+
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
     }
     return responseData;
   },
 
-  logout: () => {
+  logout: async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    if (refreshToken) {
+      try {
+        await api.post('/v1/auth/logout', { refreshToken });
+      } catch {
+        // ignore
+      }
+    }
   }
 };

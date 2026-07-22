@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 app.use('/api/v1/movies', movieRoute);
 app.use('/api/v1/cinemas', cinemaRoute);
 app.use('/api/v1/showtimes', showtimeRoute);
-app.use('/api/auth', authRoute);
+app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/payments', paymentRoute);

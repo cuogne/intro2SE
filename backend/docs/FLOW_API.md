@@ -3,8 +3,8 @@
 #### Flow đặt vé và thanh toán
 
 **Bước 1: User đăng ký và đăng nhập**
-- `POST /api/auth/register` - Đăng ký tài khoản
-- `POST /api/auth/login` - Đăng nhập và nhận token
+- `POST /api/v1/auth/register` - Đăng ký tài khoản
+- `POST /api/v1/auth/login` - Đăng nhập và nhận access + refresh token
 
 **Bước 2: User chọn phim, rạp và suất chiếu**
 - `GET /api/v1/movies` - Lấy danh sách phim và hiển thị tất cả phim đang chiếu cho user

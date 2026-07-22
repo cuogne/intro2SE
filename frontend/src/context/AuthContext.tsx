@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { authService } from "../services/authService";
 
-// Định nghĩa kiểu dữ liệu User (khớp với model backend)
 interface User {
     username: string;
     email: string;
@@ -11,8 +11,8 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (userData: User, token: string) => void;
-    logout: () => void;
+    login: (userData: User, accessToken: string, refreshToken: string) => void;
+    logout: () => Promise<void>;
     updateUser: (userData: User) => void;
 }
 
@@ -22,7 +22,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Khi F5 trang, tự động lấy user từ localStorage nếu có
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         const token = localStorage.getItem("accessToken");
@@ -32,21 +31,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
     }, []);
 
-    // Hàm Đăng nhập (Lưu vào State + LocalStorage)
-    const login = (userData: User, token: string) => {
+    const login = (userData: User, accessToken: string, refreshToken: string) => {
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
-        localStorage.setItem("accessToken", token);
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
     };
 
-    // Hàm Đăng xuất
-    const logout = () => {
+    const logout = async () => {
         setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("accessToken");
+        await authService.logout();
     };
 
-    // Hàm cập nhật thông tin user
     const updateUser = (userData: User) => {
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
@@ -55,7 +51,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>{children}</AuthContext.Provider>;
 };
 
-// Hook để các component khác gọi dùng nhanh
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) throw new Error("useAuth must be used within an AuthProvider");

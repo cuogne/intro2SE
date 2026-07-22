@@ -14,8 +14,8 @@ export default function AdminHeader() {
     const { isDarkTheme } = useTheme();
     const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate("/auth");
     };
 

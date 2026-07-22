@@ -11,8 +11,7 @@ const register = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: 'error registering user',
-            error: error.message
+            message: error.message
         })
     }
 }
@@ -20,21 +19,62 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { username, password } = req.body
-        const { user, token } = await authService.login({ username, password })
+        const result = await authService.login({ username, password })
         res.status(200).json({
             success: true,
-            data: { user, token }
+            data: result
         })
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: 'error logging in',
-            error: error.message
+            message: error.message
+        })
+    }
+}
+
+const refresh = async (req, res) => {
+    try {
+        const { refreshToken } = req.body
+        if (!refreshToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Refresh token is required'
+            })
+        }
+        const result = await authService.refreshAccessToken(refreshToken)
+        res.status(200).json({
+            success: true,
+            data: result
+        })
+    } catch (error) {
+        res.status(401).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+const logout = async (req, res) => {
+    try {
+        const { refreshToken } = req.body
+        if (refreshToken) {
+            await authService.logout(refreshToken)
+        }
+        res.status(200).json({
+            success: true,
+            message: 'Logged out successfully'
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
         })
     }
 }
 
 module.exports = {
     register,
-    login
+    login,
+    refresh,
+    logout
 }

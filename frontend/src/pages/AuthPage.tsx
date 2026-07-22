@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { User, Mail, Lock } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
@@ -17,13 +17,11 @@ const AuthPage: React.FC = () => {
         }
     }, [user, authLoading, navigate]);
 
-    // Cập nhật isRegister khi URL thay đổi
     useEffect(() => {
         const currentMode = searchParams.get("mode");
         setIsRegister(currentMode !== "login");
     }, [searchParams]);
 
-    // State lưu dữ liệu form
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -31,6 +29,8 @@ const AuthPage: React.FC = () => {
         confirmPassword: "",
     });
     const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     if (authLoading || user) {
         return null;
@@ -79,16 +79,25 @@ const AuthPage: React.FC = () => {
                     password: formData.password,
                 });
                 if (res.success && res.data) {
-                    // Gọi hàm login của Context để cập nhật Header ngay lập tức
-                    login(res.data.user, res.data.token);
+                    login(res.data.user, res.data.accessToken, res.data.refreshToken);
                 }
                 navigate("/");
             }
         } catch (err: any) {
             console.error(err);
-            // Lấy message lỗi từ backend (res.status(400).json({ message, error }))
-            const serverMessage = err.response?.data?.message || err.response?.data?.error;
-            setError(serverMessage || "Có lỗi xảy ra, vui lòng thử lại.");
+            const serverMsg = err.response?.data?.message;
+            const errorMap: Record<string, string> = {
+                'Username already exists': 'Tên tài khoản đã tồn tại',
+                'Email already exists': 'Email đã tồn tại',
+                'Username or password is incorrect': 'Tài khoản hoặc mật khẩu không chính xác',
+                'All fields are required: username, email, password': 'Vui lòng nhập đầy đủ tên tài khoản, email và mật khẩu',
+                'Username and password are required': 'Vui lòng nhập tên tài khoản và mật khẩu',
+                'Username must be between 3 and 15 characters': 'Tên tài khoản phải từ 3 đến 15 ký tự',
+                'Password must be between 6 and 20 characters': 'Mật khẩu phải từ 6 đến 20 ký tự',
+                'Invalid email format': 'Email không đúng định dạng',
+                'Username can only contain letters, numbers, and underscores': 'Tên tài khoản chỉ được chứa chữ, số và dấu gạch dưới',
+            };
+            setError(errorMap[serverMsg] || serverMsg || 'Có lỗi xảy ra, vui lòng thử lại.');
         }
     };
 
@@ -101,17 +110,6 @@ const AuthPage: React.FC = () => {
             <div className="flex border border-slate-300 dark:border-border-dark rounded mb-8 overflow-hidden bg-slate-100 dark:bg-[#232f48]">
                 <button
                     onClick={() => {
-                        setIsRegister(false);
-                        setError("");
-                        navigate("/auth?mode=login");
-                    }}
-                    className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${!isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
-                        }`}
-                >
-                    Đăng nhập
-                </button>
-                <button
-                    onClick={() => {
                         setIsRegister(true);
                         setError("");
                         navigate("/auth?mode=register");
@@ -120,6 +118,17 @@ const AuthPage: React.FC = () => {
                         }`}
                 >
                     Đăng ký
+                </button>
+                <button
+                    onClick={() => {
+                        setIsRegister(false);
+                        setError("");
+                        navigate("/auth?mode=login");
+                    }}
+                    className={`px-6 py-2 text-sm font-medium cursor-pointer transition-colors ${!isRegister ? "bg-primary text-white" : "bg-transparent text-slate-600 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white"
+                        }`}
+                >
+                    Đăng nhập
                 </button>
             </div>
 
@@ -168,13 +177,16 @@ const AuthPage: React.FC = () => {
                     <div className="relative">
                         <input
                             name="password"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             value={formData.password}
                             onChange={handleChange}
                             placeholder="Nhập mật khẩu"
-                            className="w-full bg-white dark:bg-[#232f48] border-2 border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white rounded p-3 pl-10 focus:outline-none focus:border-primary placeholder:text-slate-400 dark:placeholder:text-text-secondary"
+                            className="w-full bg-white dark:bg-[#232f48] border-2 border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white rounded p-3 pl-10 pr-10 focus:outline-none focus:border-primary placeholder:text-slate-400 dark:placeholder:text-text-secondary"
                         />
                         <Lock className="absolute left-3 top-3.5 w-5 h-5 text-slate-400 dark:text-text-secondary" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400 dark:text-text-secondary hover:text-slate-600 dark:hover:text-white cursor-pointer">
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
                     </div>
                 </div>
 
@@ -185,14 +197,22 @@ const AuthPage: React.FC = () => {
                         <div className="relative">
                             <input
                                 name="confirmPassword"
-                                type="password"
+                                type={showConfirmPassword ? "text" : "password"}
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 placeholder="Xác nhận mật khẩu"
-                                className="w-full bg-white dark:bg-[#232f48] border-2 border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white rounded p-3 pl-10 focus:outline-none focus:border-primary placeholder:text-slate-400 dark:placeholder:text-text-secondary"
+                                className="w-full bg-white dark:bg-[#232f48] border-2 border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white rounded p-3 pl-10 pr-10 focus:outline-none focus:border-primary placeholder:text-slate-400 dark:placeholder:text-text-secondary"
                             />
                             <Lock className="absolute left-3 top-3.5 w-5 h-5 text-slate-400 dark:text-text-secondary" />
+                            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5 text-slate-400 dark:text-text-secondary hover:text-slate-600 dark:hover:text-white cursor-pointer">
+                                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
                         </div>
+                        {formData.confirmPassword && (
+                            <p className={`text-xs mt-1 ${formData.password === formData.confirmPassword ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                {formData.password === formData.confirmPassword ? 'Mật khẩu khớp' : 'Mật khẩu không khớp'}
+                            </p>
+                        )}
                     </div>
                 )}
 

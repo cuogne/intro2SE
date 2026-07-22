@@ -2,7 +2,7 @@
 
 ### Register
 # @name registerRequest
-POST {{baseUrl}}/auth/register
+POST {{baseUrl}}/v1/auth/register
 Content-Type: application/json
 
 {
@@ -13,10 +13,19 @@ Content-Type: application/json
 
 ### Login
 # @name loginRequest
-POST {{baseUrl}}/auth/login
+POST {{baseUrl}}/v1/auth/login
 Content-Type: application/json
 
 {
     "username": "anhcuongday",
     "password": "anhcuongday"
+}
+
+### Refresh Token
+# @name refreshRequest
+POST {{baseUrl}}/v1/auth/refresh
+Content-Type: application/json
+
+{
+    "refreshToken": "<refresh_token_from_login>"
 }
