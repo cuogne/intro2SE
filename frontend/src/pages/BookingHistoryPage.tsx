@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getBookingsHistory, type BookingItem } from "../services/bookingService";
 import { Calendar, MapPin, Ticket, Clock } from "lucide-react";
@@ -7,12 +7,13 @@ import { Calendar, MapPin, Ticket, Clock } from "lucide-react";
 const BookingHistoryPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [bookings, setBookings] = useState<BookingItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!user) {
-            navigate("/auth");
+            navigate("/auth?redirect=" + encodeURIComponent(location.pathname));
             return;
         }
 

@@ -16,7 +16,7 @@ export default function AdminHeader() {
 
     const handleLogout = async () => {
         await logout();
-        navigate("/auth");
+        navigate("/");
     };
 
     const menuItems: MenuProps["items"] = [

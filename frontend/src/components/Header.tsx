@@ -17,7 +17,7 @@ const Header: React.FC = () => {
 
     const handleLogout = async () => {
         await logout();
-        navigate("/auth");
+        navigate("/");
     };
 
     const handleSearch = (e: React.FormEvent) => {

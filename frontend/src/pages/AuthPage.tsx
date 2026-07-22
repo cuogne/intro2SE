@@ -11,11 +11,13 @@ const AuthPage: React.FC = () => {
     const [isRegister, setIsRegister] = useState(mode !== "login");
     const navigate = useNavigate();
 
+    const redirectTo = searchParams.get("redirect") || "/";
+
     useEffect(() => {
         if (!authLoading && user) {
-            navigate("/");
+            navigate(redirectTo, { replace: true });
         }
-    }, [user, authLoading, navigate]);
+    }, [user, authLoading, navigate, redirectTo]);
 
     useEffect(() => {
         const currentMode = searchParams.get("mode");
@@ -81,7 +83,7 @@ const AuthPage: React.FC = () => {
                 if (res.success && res.data) {
                     login(res.data.user, res.data.accessToken, res.data.refreshToken);
                 }
-                navigate("/");
+                navigate(redirectTo, { replace: true });
             }
         } catch (err: any) {
             console.error(err);

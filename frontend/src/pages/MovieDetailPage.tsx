@@ -6,9 +6,11 @@ import TrailerModal from "../components/TrailerModal";
 import type { Movie } from "../services/movieService";
 import { fetchShowtimesByMovie, getFixedDates } from "../services/showtimeService";
 import type { CinemaShowtimeGroup } from "../services/showtimeService";
+import { useAuth } from "../context/AuthContext";
 
 const MovieDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [movie, setMovie] = useState<Movie | null>(null);
     const [loading, setLoading] = useState(true);
@@ -133,7 +135,13 @@ const MovieDetailPage: React.FC = () => {
                                         <button
                                             key={timeIdx}
                                             className="px-6 py-2 border border-gray-300 dark:border-[#324467] bg-white dark:bg-[#232f48] text-gray-900 dark:text-white rounded hover:bg-primary hover:text-white hover:border-primary transition-colors font-medium text-sm cursor-pointer"
-                                            onClick={() => navigate(`/seats/${showtime.id}`)}
+                                            onClick={() => {
+                                                if (!user) {
+                                                    navigate("/auth?redirect=" + encodeURIComponent(`/movies/${id}`));
+                                                    return;
+                                                }
+                                                navigate(`/seats/${showtime.id}`);
+                                            }}
                                         >
                                             {showtime.time}
                                         </button>

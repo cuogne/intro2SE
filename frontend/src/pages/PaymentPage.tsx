@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getBookingById, type BookingItem } from "../services/bookingService";
 import { createZaloPayOrder, createMomoPayment } from "../services/paymentService";
@@ -11,6 +11,7 @@ const PaymentPage: React.FC = () => {
     const { bookingId } = useParams<{ bookingId: string }>();
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [booking, setBooking] = useState<BookingItem | null>(null);
     const [loading, setLoading] = useState(true);
@@ -24,7 +25,7 @@ const PaymentPage: React.FC = () => {
         if (authLoading) return;
         
         if (!user) {
-            navigate("/auth");
+            navigate("/auth?redirect=" + encodeURIComponent(location.pathname));
             return;
         }
         if (!bookingId) {
