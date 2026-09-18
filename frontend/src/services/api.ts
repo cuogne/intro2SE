@@ -1,7 +1,15 @@
 import axios from "axios";
 
+const configuredApiUrl = import.meta.env.VITE_API_URL;
+
+if (!configuredApiUrl) {
+  throw new Error("Missing VITE_API_URL environment variable");
+}
+
+const apiBaseUrl = configuredApiUrl.replace(/\/$/, "");
+
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
   },
@@ -54,7 +62,7 @@ api.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post("http://localhost:3000/api/v1/auth/refresh", { refreshToken });
+        const { data } = await axios.post(`${apiBaseUrl}/v1/auth/refresh`, { refreshToken });
         if (data.success && data.data.accessToken) {
           const newToken = data.data.accessToken;
           localStorage.setItem("accessToken", newToken);

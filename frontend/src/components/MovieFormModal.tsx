@@ -104,11 +104,19 @@ export default function MovieFormModal({
       try {
         const formData = new FormData();
         formData.append("file", posterFile);
-        formData.append("upload_preset", "movies_preset");
-        formData.append("cloud_name", "dd6hyrrdf");
+        const cloudinaryUploadUrl = import.meta.env.VITE_CLOUDINARY_UPLOAD_URL;
+        const cloudinaryUploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+        const cloudinaryCloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+
+        if (!cloudinaryUploadUrl || !cloudinaryUploadPreset || !cloudinaryCloudName) {
+          throw new Error("Thiếu cấu hình upload ảnh Cloudinary");
+        }
+
+        formData.append("upload_preset", cloudinaryUploadPreset);
+        formData.append("cloud_name", cloudinaryCloudName);
 
         const response = await fetch(
-          `https://api.cloudinary.com/v1_1/dd6hyrrdf/image/upload`,
+          cloudinaryUploadUrl,
           {
             method: "POST",
             body: formData,
