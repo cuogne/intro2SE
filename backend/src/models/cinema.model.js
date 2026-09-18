@@ -7,10 +7,12 @@ const cinemaSchema = new mongoose.Schema({
   type: { type: String, default: '2dstandard' }, //2dstandard, 3dvip, imax
   rows: { type: Number, required: true },
   columns: { type: Number, required: true },
-  seatLayout: [{
+  seatLayout: [
+    {
       row: { type: String, required: true },
-      seats: [{ type: String, required: true }]
-    }],
+      seats: [{ type: String, required: true }],
+    },
+  ],
 });
 
 const Cinema = mongoose.model('Cinema', cinemaSchema);

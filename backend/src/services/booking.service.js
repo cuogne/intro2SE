@@ -1,5 +1,8 @@
 const Booking = require('../models/booking.model');
 const Showtime = require('../models/showtime.model');
+const Movie = require('../models/movie.model');
+const Cinema = require('../models/cinema.model');
+const User = require('../models/user.model');
 const mongoose = require('mongoose');
 const seatHold = require('./seatHold.service');
 
@@ -19,8 +22,8 @@ const getBookingByUser = async (userId) => {
         {
           path: 'cinema',
           select: 'name address',
-        }
-      ]
+        },
+      ],
     })
     .sort({ bookedAt: -1 });
 };
@@ -29,7 +32,7 @@ const getBookingByUser = async (userId) => {
 const getBookingById = async (bookingId, currentUserId) => {
   const booking = await Booking.findOne({
     _id: bookingId,
-    user: currentUserId
+    user: currentUserId,
   })
     .populate('user', 'username')
     .populate({
@@ -37,8 +40,8 @@ const getBookingById = async (bookingId, currentUserId) => {
       select: 'startTime totalPrice',
       populate: [
         { path: 'movie', select: 'title minutes' },
-        { path: 'cinema', select: 'name address' }
-      ]
+        { path: 'cinema', select: 'name address' },
+      ],
     });
 
   if (!booking) throw new Error('Booking not found');
@@ -65,7 +68,7 @@ const getBookingById = async (bookingId, currentUserId) => {
     address: booking.showtime.cinema.address,
     startTime: booking.showtime.startTime,
     totalPrice: booking.totalPrice,
-    seat: booking.seat.map(s => `${s.row}${s.number}`),
+    seat: booking.seat.map((s) => `${s.row}${s.number}`),
     quantity: booking.seat.length,
     status: booking.status,
     bookedAt: booking.bookedAt,
@@ -73,10 +76,10 @@ const getBookingById = async (bookingId, currentUserId) => {
     paymentProvider: booking.paymentProvider || null,
     paymentTransId: booking.paymentTransId || null,
     paymentMeta: booking.paymentMeta || null,
-  }
+  };
 
-  return bookData
-}
+  return bookData;
+};
 
 const checkSeatsAvailable = async (showtimeId, seats, excludeUserId = null) => {
   await cleanupExpiredBookings(showtimeId);
@@ -92,7 +95,7 @@ const checkSeatsAvailable = async (showtimeId, seats, excludeUserId = null) => {
   const activePendingBookings = await Booking.find({
     showtime: showtimeId,
     status: 'pending',
-    holdExpiresAt: { $gt: now }
+    holdExpiresAt: { $gt: now },
   });
 
   const bookedSeats = new Set();
@@ -134,28 +137,22 @@ const reserveSeats = async (userId, showtimeId, seats) => {
     user: userId,
     showtime: showtimeId,
     status: 'pending',
-    holdExpiresAt: { $gt: now }
+    holdExpiresAt: { $gt: now },
   });
 
   if (existingBooking) {
-    const existingSeats = new Set(
-      existingBooking.seat.map(s => `${s.row}-${s.number}`)
-    );
-    const newSeats = seats.filter(
-      s => !existingSeats.has(`${s.row}-${s.number}`)
-    );
+    const existingSeats = new Set(existingBooking.seat.map((s) => `${s.row}-${s.number}`));
+    const newSeats = seats.filter((s) => !existingSeats.has(`${s.row}-${s.number}`));
 
     if (newSeats.length > 0) {
       const seatCheck = await checkSeatsAvailable(showtimeId, newSeats, userId);
 
       if (!seatCheck.available) {
-        throw new Error(
-          `Seats already booked or reserved: ${seatCheck.conflictSeats.join(', ')}`
-        );
+        throw new Error(`Seats already booked or reserved: ${seatCheck.conflictSeats.join(', ')}`);
       }
 
       await Promise.all(
-        newSeats.map(s => seatHold.holdSeat(showtimeId, s.row, s.number, String(userId)))
+        newSeats.map((s) => seatHold.holdSeat(showtimeId, s.row, s.number, String(userId)))
       );
 
       existingBooking.seat.push(...newSeats);
@@ -174,18 +171,16 @@ const reserveSeats = async (userId, showtimeId, seats) => {
       booking: existingBooking,
       holdExpiresAt: existingBooking.holdExpiresAt,
       expiresInSeconds: remainingSeconds,
-      isNewBooking: false
+      isNewBooking: false,
     };
   } else {
     const seatCheck = await checkSeatsAvailable(showtimeId, seats, userId);
     if (!seatCheck.available) {
-      throw new Error(
-        `Seats already booked or reserved: ${seatCheck.conflictSeats.join(', ')}`
-      );
+      throw new Error(`Seats already booked or reserved: ${seatCheck.conflictSeats.join(', ')}`);
     }
 
     await Promise.all(
-      seats.map(s => seatHold.holdSeat(showtimeId, s.row, s.number, String(userId)))
+      seats.map((s) => seatHold.holdSeat(showtimeId, s.row, s.number, String(userId)))
     );
 
     const totalPrice = showtime.price * seats.length;
@@ -207,7 +202,7 @@ const reserveSeats = async (userId, showtimeId, seats) => {
       booking,
       holdExpiresAt,
       expiresInSeconds: seatHold.HOLD_TTL,
-      isNewBooking: true
+      isNewBooking: true,
     };
   }
 };
@@ -216,7 +211,7 @@ const updateBookingSeats = async (userId, bookingId, action, seats) => {
   const booking = await Booking.findOne({
     _id: bookingId,
     user: userId,
-    status: 'pending'
+    status: 'pending',
   });
 
   if (!booking) {
@@ -226,7 +221,7 @@ const updateBookingSeats = async (userId, bookingId, action, seats) => {
   const now = new Date();
   if (booking.holdExpiresAt <= now) {
     await seatHold.releaseSeats(booking.showtime, booking.seat);
-    await Booking.findByIdAndDelete(bookingId);
+    await Booking.findByIdAndUpdate(bookingId, { status: 'expired' });
     throw new Error('Booking has expired');
   }
 
@@ -236,11 +231,13 @@ const updateBookingSeats = async (userId, bookingId, action, seats) => {
   }
 
   if (action === 'add') {
-    const existingSeats = booking.seat.map(s => `${s.row}-${s.number}`);
-    const duplicates = seats.filter(s => existingSeats.includes(`${s.row}-${s.number}`));
+    const existingSeats = booking.seat.map((s) => `${s.row}-${s.number}`);
+    const duplicates = seats.filter((s) => existingSeats.includes(`${s.row}-${s.number}`));
 
     if (duplicates.length > 0) {
-      throw new Error(`Seats already in reservation: ${duplicates.map(s => `${s.row}-${s.number}`).join(', ')}`);
+      throw new Error(
+        `Seats already in reservation: ${duplicates.map((s) => `${s.row}-${s.number}`).join(', ')}`
+      );
     }
 
     const seatCheck = await checkSeatsAvailable(booking.showtime, seats, userId);
@@ -250,18 +247,15 @@ const updateBookingSeats = async (userId, bookingId, action, seats) => {
     }
 
     await Promise.all(
-      seats.map(s => seatHold.holdSeat(booking.showtime, s.row, s.number, String(userId)))
+      seats.map((s) => seatHold.holdSeat(booking.showtime, s.row, s.number, String(userId)))
     );
 
     booking.seat.push(...seats);
-
   } else if (action === 'remove') {
     const initialLength = booking.seat.length;
 
-    const seatsToRemoveKeys = seats.map(s => `${s.row}-${s.number}`);
-    booking.seat = booking.seat.filter(
-      s => !seatsToRemoveKeys.includes(`${s.row}-${s.number}`)
-    );
+    const seatsToRemoveKeys = seats.map((s) => `${s.row}-${s.number}`);
+    booking.seat = booking.seat.filter((s) => !seatsToRemoveKeys.includes(`${s.row}-${s.number}`));
 
     if (booking.seat.length === initialLength) {
       throw new Error('None of the requested seats were found in reservation');
@@ -288,7 +282,7 @@ const updateBookingSeats = async (userId, bookingId, action, seats) => {
     booking,
     holdExpiresAt: booking.holdExpiresAt,
     expiresInSeconds: remainingSeconds,
-    deleted: false
+    deleted: false,
   };
 };
 
@@ -300,12 +294,12 @@ const getAllBookings = async () => {
       select: 'startTime totalPrice',
       populate: [
         { path: 'movie', select: 'title minutes' },
-        { path: 'cinema', select: 'name address' }
-      ]
+        { path: 'cinema', select: 'name address' },
+      ],
     })
     .sort({ bookedAt: -1 });
 
-  return bookings.map(booking => ({
+  return bookings.map((booking) => ({
     id: booking._id,
     user: booking.user?.username || null,
     movie: booking.showtime?.movie?.title || null,
@@ -313,7 +307,7 @@ const getAllBookings = async () => {
     address: booking.showtime?.cinema?.address || null,
     startTime: booking.showtime?.startTime || null,
     totalPrice: booking.totalPrice,
-    seat: booking.seat.map(s => `${s.row} - ${s.number}`),
+    seat: booking.seat.map((s) => `${s.row} - ${s.number}`),
     quantity: booking.seat.length,
     status: booking.status,
     bookedAt: booking.bookedAt,
@@ -332,23 +326,22 @@ const getTotalRevenue = async (fromDate, toDate) => {
           status: 'confirmed',
           paidAt: {
             $gte: new Date(fromDate),
-            $lte: new Date(toDate)
-          }
-        }
+            $lte: new Date(toDate),
+          },
+        },
       },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$totalPrice' }
-        }
-      }
+          totalRevenue: { $sum: '$totalPrice' },
+        },
+      },
     ]);
     return result.length > 0 ? result[0].totalRevenue : 0;
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error('Error calculating total revenue');
   }
-}
+};
 
 const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
   try {
@@ -357,8 +350,8 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
       status: 'confirmed',
       paidAt: {
         $gte: new Date(fromDate),
-        $lte: new Date(toDate)
-      }
+        $lte: new Date(toDate),
+      },
     };
 
     // Build aggregation pipeline
@@ -369,18 +362,18 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
           from: 'showtimes',
           localField: 'showtime',
           foreignField: '_id',
-          as: 'showtimeData'
-        }
+          as: 'showtimeData',
+        },
       },
-      { $unwind: '$showtimeData' }
+      { $unwind: '$showtimeData' },
     ];
 
     // Add movie filter if provided
     if (movieId) {
       pipeline.push({
         $match: {
-          'showtimeData.movie': new mongoose.Types.ObjectId(movieId)
-        }
+          'showtimeData.movie': new mongoose.Types.ObjectId(movieId),
+        },
       });
     }
 
@@ -388,8 +381,8 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
     if (cinemaId) {
       pipeline.push({
         $match: {
-          'showtimeData.cinema': new mongoose.Types.ObjectId(cinemaId)
-        }
+          'showtimeData.cinema': new mongoose.Types.ObjectId(cinemaId),
+        },
       });
     }
 
@@ -400,8 +393,8 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
           from: 'movies',
           localField: 'showtimeData.movie',
           foreignField: '_id',
-          as: 'movieData'
-        }
+          as: 'movieData',
+        },
       },
       { $unwind: '$movieData' },
       {
@@ -409,8 +402,8 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
           from: 'cinemas',
           localField: 'showtimeData.cinema',
           foreignField: '_id',
-          as: 'cinemaData'
-        }
+          as: 'cinemaData',
+        },
       },
       { $unwind: '$cinemaData' }
     );
@@ -423,9 +416,9 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
           _id: null,
           totalRevenue: { $sum: '$totalPrice' },
           totalBookings: { $sum: 1 },
-          totalTickets: { $sum: { $size: '$seat' } }
-        }
-      }
+          totalTickets: { $sum: { $size: '$seat' } },
+        },
+      },
     ];
 
     // Calculate by movie
@@ -435,12 +428,12 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
         $group: {
           _id: {
             movieId: '$showtimeData.movie',
-            movieTitle: '$movieData.title'
+            movieTitle: '$movieData.title',
           },
           revenue: { $sum: '$totalPrice' },
           tickets: { $sum: { $size: '$seat' } },
-          bookings: { $sum: 1 }
-        }
+          bookings: { $sum: 1 },
+        },
       },
       {
         $project: {
@@ -449,10 +442,10 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
           movieTitle: '$_id.movieTitle',
           revenue: 1,
           tickets: 1,
-          bookings: 1
-        }
+          bookings: 1,
+        },
       },
-      { $sort: { revenue: -1 } }
+      { $sort: { revenue: -1 } },
     ];
 
     // Calculate by cinema
@@ -462,12 +455,12 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
         $group: {
           _id: {
             cinemaId: '$showtimeData.cinema',
-            cinemaName: '$cinemaData.name'
+            cinemaName: '$cinemaData.name',
           },
           revenue: { $sum: '$totalPrice' },
           tickets: { $sum: { $size: '$seat' } },
-          bookings: { $sum: 1 }
-        }
+          bookings: { $sum: 1 },
+        },
       },
       {
         $project: {
@@ -476,27 +469,33 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
           cinemaName: '$_id.cinemaName',
           revenue: 1,
           tickets: 1,
-          bookings: 1
-        }
+          bookings: 1,
+        },
       },
-      { $sort: { revenue: -1 } }
+      { $sort: { revenue: -1 } },
     ];
 
     // Execute all pipelines in parallel
     const [totalStats, byMovie, byCinema] = await Promise.all([
       Booking.aggregate(totalStatsPipeline),
       Booking.aggregate(movieStatsPipeline),
-      Booking.aggregate(cinemaStatsPipeline)
+      Booking.aggregate(cinemaStatsPipeline),
     ]);
 
-    const stats = totalStats.length > 0 ? totalStats[0] : {
-      totalRevenue: 0,
-      totalBookings: 0,
-      totalTickets: 0
-    };
+    const stats =
+      totalStats.length > 0
+        ? totalStats[0]
+        : {
+            totalRevenue: 0,
+            totalBookings: 0,
+            totalTickets: 0,
+          };
 
     // Get all bookings matching the filters
-    const bookingQuery = { status: 'confirmed', paidAt: { $gte: new Date(fromDate), $lte: new Date(toDate) } };
+    const bookingQuery = {
+      status: 'confirmed',
+      paidAt: { $gte: new Date(fromDate), $lte: new Date(toDate) },
+    };
     const bookings = await Booking.find(bookingQuery)
       .populate('user', 'username')
       .populate({
@@ -504,21 +503,25 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
         select: 'startTime totalPrice movie cinema',
         populate: [
           { path: 'movie', select: 'title minutes' },
-          { path: 'cinema', select: 'name address' }
-        ]
+          { path: 'cinema', select: 'name address' },
+        ],
       })
       .sort({ bookedAt: -1 });
 
     // Filter by movie and cinema if specified
     let filteredBookings = bookings;
     if (movieId) {
-      filteredBookings = filteredBookings.filter(b => b.showtime?.movie?._id?.toString() === movieId);
+      filteredBookings = filteredBookings.filter(
+        (b) => b.showtime?.movie?._id?.toString() === movieId
+      );
     }
     if (cinemaId) {
-      filteredBookings = filteredBookings.filter(b => b.showtime?.cinema?._id?.toString() === cinemaId);
+      filteredBookings = filteredBookings.filter(
+        (b) => b.showtime?.cinema?._id?.toString() === cinemaId
+      );
     }
 
-    const transactionsList = filteredBookings.map(booking => ({
+    const transactionsList = filteredBookings.map((booking) => ({
       id: booking._id,
       user: booking.user?.username || null,
       movie: booking.showtime?.movie?.title || null,
@@ -526,7 +529,7 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
       address: booking.showtime?.cinema?.address || null,
       startTime: booking.showtime?.startTime || null,
       totalPrice: booking.totalPrice,
-      seat: booking.seat.map(s => `${s.row} - ${s.number}`),
+      seat: booking.seat.map((s) => `${s.row} - ${s.number}`),
       quantity: booking.seat.length,
       status: booking.status,
       bookedAt: booking.bookedAt,
@@ -542,7 +545,7 @@ const getBookingStatistics = async (fromDate, toDate, movieId, cinemaId) => {
       totalTickets: stats.totalTickets || 0,
       byMovie: byMovie || [],
       byCinema: byCinema || [],
-      transactions: transactionsList
+      transactions: transactionsList,
     };
   } catch (error) {
     throw new Error('Error calculating booking statistics: ' + error.message);
@@ -553,7 +556,7 @@ const cleanupExpiredBookings = async (showtimeId = null) => {
   const now = new Date();
   const filter = {
     status: 'pending',
-    holdExpiresAt: { $lte: now }
+    holdExpiresAt: { $lte: now },
   };
   if (showtimeId) filter.showtime = showtimeId;
 
@@ -563,7 +566,7 @@ const cleanupExpiredBookings = async (showtimeId = null) => {
 
   for (const booking of expiredBookings) {
     await seatHold.releaseSeats(booking.showtime, booking.seat);
-    await Booking.findByIdAndDelete(booking._id);
+    await Booking.findByIdAndUpdate(booking._id, { status: 'expired' });
   }
 
   return expiredBookings.length;

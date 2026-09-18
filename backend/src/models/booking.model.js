@@ -5,23 +5,25 @@ const bookingSchema = new mongoose.Schema({
   showtime: { type: mongoose.Schema.Types.ObjectId, ref: 'Showtime', required: true, index: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 
-  seat: [{
-    row: { type: String, required: true },
-    number: { type: Number, required: true },
-  }],
+  seat: [
+    {
+      row: { type: String, required: true },
+      number: { type: Number, required: true },
+    },
+  ],
 
   totalPrice: { type: Number, required: true },
 
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled'],
+    enum: ['pending', 'confirmed', 'cancelled', 'expired'],
     default: 'pending',
     index: true,
   },
   holdExpiresAt: { type: Date, index: true }, // để auto hết hạn hold
   paidAt: { type: Date },
   paymentProvider: { type: String }, // 'zalopay'
-  paymentTransId: { type: String },  // app_trans_id hoặc zp_trans_id
+  paymentTransId: { type: String }, // app_trans_id hoặc zp_trans_id
   paymentMeta: { type: Object },
 
   bookedAt: { type: Date, default: Date.now },

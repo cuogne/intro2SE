@@ -31,8 +31,7 @@ const getBookingById = async (req, res) => {
       success: true,
       data: booking,
     });
-  }
-  catch (error) {
+  } catch (error) {
     res.status(400).json({
       success: false,
       message: 'Error getting booking by id',
@@ -67,7 +66,7 @@ const reserveSeats = async (req, res) => {
         seats: result.booking.seat,
         message: result.isNewBooking
           ? 'Seats reserved for 5 minutes'
-          : 'Seats added to existing reservation'
+          : 'Seats added to existing reservation',
       },
     });
   } catch (error) {
@@ -115,7 +114,7 @@ const updateBookingSeats = async (req, res) => {
         success: true,
         data: {
           deleted: true,
-          message: 'Reservation cancelled (no seats remaining)'
+          message: 'Reservation cancelled (no seats remaining)',
         },
       });
     }
@@ -124,11 +123,10 @@ const updateBookingSeats = async (req, res) => {
       success: true,
       data: {
         bookingId: result.booking._id,
+        seats: result.booking.seat,
         holdExpiresAt: result.holdExpiresAt,
         expiresInSeconds: result.expiresInSeconds,
-        message: action === 'add'
-          ? 'Seats added to reservation'
-          : 'Seats removed from reservation'
+        message: action === 'add' ? 'Seats added to reservation' : 'Seats removed from reservation',
       },
     });
   } catch (error) {
@@ -147,15 +145,14 @@ const getAllBookings = async (req, res) => {
       success: true,
       data: result,
     });
-  }
-  catch (error) {
+  } catch (error) {
     return res.status(400).json({
       success: false,
       message: 'Error getting all bookings',
       error: error.message,
     });
   }
-}
+};
 
 const getTotalRevenue = async (req, res) => {
   try {
@@ -199,7 +196,7 @@ const getTotalRevenue = async (req, res) => {
       data: {
         totalRevenue,
         fromDate: fromDateObj,
-        toDate: toDateObj
+        toDate: toDateObj,
       },
     });
   } catch (error) {
@@ -209,7 +206,7 @@ const getTotalRevenue = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
 const getBookingStatistics = async (req, res) => {
   try {
@@ -276,8 +273,8 @@ const getBookingStatistics = async (req, res) => {
           fromDate: fromDateObj,
           toDate: toDateObj,
           movieId: movieId || null,
-          cinemaId: cinemaId || null
-        }
+          cinemaId: cinemaId || null,
+        },
       },
     });
   } catch (error) {
@@ -287,7 +284,7 @@ const getBookingStatistics = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
 module.exports = {
   getBookingById,

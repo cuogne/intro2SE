@@ -11,7 +11,7 @@ const createZalopayOrder = async (req, res) => {
     if (!bookingId) {
       return res.status(400).json({
         success: false,
-        message: 'bookingId is required'
+        message: 'bookingId is required',
       });
     }
 
@@ -20,7 +20,7 @@ const createZalopayOrder = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found or not authorized'
+        message: 'Booking not found or not authorized',
       });
     }
 
@@ -28,13 +28,13 @@ const createZalopayOrder = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
       message: 'Error creating payment order',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -52,7 +52,7 @@ const handleZalopayCallback = async (req, res) => {
       console.error('Missing data or mac in callback');
       return res.status(200).json({
         return_code: -1,
-        return_message: 'Missing data or mac'
+        return_message: 'Missing data or mac',
       });
     }
 
@@ -68,16 +68,17 @@ const handleZalopayCallback = async (req, res) => {
     // Trả về lỗi để Zalopay callback lại (tối đa 3 lần)
     res.status(200).json({
       return_code: 0,
-      return_message: error.message
+      return_message: error.message,
     });
   }
-}
+};
 
 // MOMO
 const createMoMoOrder = async (req, res) => {
   try {
     const { bookingId } = req.body;
-    if (!bookingId) return res.status(400).json({ success: false, message: 'bookingId is required' });
+    if (!bookingId)
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
 
     const booking = await Booking.findOne({ _id: bookingId, user: req.user.id });
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });

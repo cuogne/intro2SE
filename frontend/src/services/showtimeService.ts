@@ -150,7 +150,7 @@ export const fetchShowtimeById = async (
     return doc as ShowtimeDetail | null;
   } catch (error) {
     console.error(`Lỗi khi gọi /v1/showtimes/${id}:`, error);
-    return null;
+    throw error;
   }
 };
 

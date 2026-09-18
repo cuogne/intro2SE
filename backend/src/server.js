@@ -9,6 +9,7 @@ const userRoute = require('./routes/user.route');
 const staffRoute = require('./routes/staff.route');
 const connectMongoDB = require('./config/mongodb.config');
 const { startCleanupJob } = require('./utils/cleanupJob');
+const errorHandler = require('./middleware/errorHandler.middleware');
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,14 @@ app.use('/api/v1/users', userRoute);
 app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/payments', paymentRoute);
 app.use('/api/v1/staff', staffRoute);
+
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Route not found' 
+  });
+});
+app.use(errorHandler);
 
 const startServer = async () => {
   try {

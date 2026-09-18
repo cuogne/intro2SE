@@ -112,7 +112,7 @@ const PaymentPage: React.FC = () => {
 
     const handleBackToSeatSelection = () => {
         if (showtimeId) {
-            navigate(`/seats/${showtimeId}`);
+            navigate(`/seats/${showtimeId}`, { replace: true });
         } else {
             navigate(-1);
         }

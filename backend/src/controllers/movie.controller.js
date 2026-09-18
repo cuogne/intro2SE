@@ -4,8 +4,8 @@ const getMoviesByQuery = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8; // 1 page 8 bộ
-    const status = req.query.status || "now_showing"
-    const search = req.query.search || ""
+    const status = req.query.status || 'now_showing';
+    const search = req.query.search || '';
 
     const movies = await movieService.getMoviesByQuery(page, limit, status, search);
 

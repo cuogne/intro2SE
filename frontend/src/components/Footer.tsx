@@ -51,14 +51,6 @@ const Footer: React.FC = () => {
         </div>
         <div className="pt-3 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 dark:text-text-secondary text-xs">© 2023 ABC Cinema. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <div className="h-8 w-auto opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer">
-              <img alt="Mastercard logo" className="h-full object-contain" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/2560px-Mastercard-logo.svg.png" />
-            </div>
-            <div className="h-4 w-auto opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer">
-              <img alt="Visa logo" className="h-full object-contain" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" />
-            </div>
-          </div>
         </div>
       </div>
     </footer>

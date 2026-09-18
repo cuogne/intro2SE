@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { fetchShowtimeById, type ShowtimeDetail, type ShowtimeSeat } from "../services/showtimeService";
@@ -16,6 +16,7 @@ const SeatSelectionPage: React.FC = () => {
     const [bookingId, setBookingId] = useState<string | null>(null);
     const [timeLeft, setTimeLeft] = useState<number>(300); // 5 phút = 300 giây
     const [error, setError] = useState<string>("");
+    const [isSyncingSeats, setIsSyncingSeats] = useState(false);
 
     useEffect(() => {
         if (authLoading) return;
@@ -32,22 +33,56 @@ const SeatSelectionPage: React.FC = () => {
 
         const loadShowtime = async () => {
             setLoading(true);
-            const data = await fetchShowtimeById(showtimeId);
-            if (data) {
-                setShowtime(data);
+            try {
+                const data = await fetchShowtimeById(showtimeId);
+                if (data) {
+                    setShowtime(data);
 
-                if (data.pendingBooking) {
-                    setBookingId(data.pendingBooking.bookingId);
-                    setSelectedSeats(data.pendingBooking.seats);
-                    const expiresIn = new Date(data.pendingBooking.holdExpiresAt).getTime() - Date.now();
-                    if (expiresIn > 0) {
-                        setTimeLeft(Math.floor(expiresIn / 1000));
+                    if (data.pendingBooking) {
+                        setBookingId(data.pendingBooking.bookingId);
+                        bookingIdRef.current = data.pendingBooking.bookingId;
+                        setSelectedSeats(data.pendingBooking.seats);
+                        selectedSeatsRef.current = data.pendingBooking.seats;
+                        const expiresIn = new Date(data.pendingBooking.holdExpiresAt).getTime() - Date.now();
+                        if (expiresIn > 0) {
+                            setTimeLeft(Math.floor(expiresIn / 1000));
+                        }
+                    } else {
+                        // fallback: localStorage cache
+                        try {
+                            const raw = localStorage.getItem("booking_session_" + showtimeId);
+                            if (raw) {
+                                const cached = JSON.parse(raw);
+                                if (Date.now() - cached.savedAt < 5 * 60 * 1000) {
+                                    setBookingId(cached.bookingId);
+                                    bookingIdRef.current = cached.bookingId;
+                                    setSelectedSeats(cached.selectedSeats);
+                                    selectedSeatsRef.current = cached.selectedSeats;
+                                    const expiresIn = new Date(cached.holdExpiresAt).getTime() - Date.now();
+                                    if (expiresIn > 0) setTimeLeft(Math.floor(expiresIn / 1000));
+                                } else {
+                                    localStorage.removeItem("booking_session_" + showtimeId);
+                                }
+                            }
+                        } catch { }
                     }
+                } else {
+                    setError("Không tìm thấy suất chiếu");
                 }
-            } else {
-                setError("Không tìm thấy suất chiếu");
+            } catch (loadError: any) {
+                if (loadError.response?.status === 401) {
+                    navigate("/auth?redirect=" + encodeURIComponent("/seats/" + showtimeId));
+                    return;
+                }
+
+                setError(
+                    loadError.response?.status === 404
+                        ? "Không tìm thấy suất chiếu"
+                        : "Không thể tải thông tin suất chiếu"
+                );
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         loadShowtime();
@@ -68,7 +103,7 @@ const SeatSelectionPage: React.FC = () => {
 
     // Timer countdown
     useEffect(() => {
-        if (!bookingId || timeLeft <= 0) return;
+        if (!bookingId) return;
 
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
@@ -76,7 +111,9 @@ const SeatSelectionPage: React.FC = () => {
                     clearInterval(timer);
                     setError("Hết thời gian giữ ghế. Vui lòng chọn lại.");
                     setSelectedSeats([]);
+                    selectedSeatsRef.current = [];
                     setBookingId(null);
+                    bookingIdRef.current = null;
                     if (showtimeId) clearBookingSession(showtimeId);
                     return 0;
                 }
@@ -85,7 +122,7 @@ const SeatSelectionPage: React.FC = () => {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [bookingId, timeLeft]);
+    }, [bookingId, showtimeId]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -93,93 +130,127 @@ const SeatSelectionPage: React.FC = () => {
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const [processingSeat, setProcessingSeat] = useState<boolean>(false);
+    const bookingIdRef = useRef<string | null>(null);
+    const selectedSeatsRef = useRef<Seat[]>([]);
+    const seatActionQueueRef = useRef<Array<{ seat: Seat; isSelected: boolean }>>([]);
+    const processingQueueRef = useRef(false);
 
-    const handleSeatClick = async (row: string, number: number) => {
-        if (!showtime || processingSeat) return;
-        setProcessingSeat(true);
-
-        const seat: Seat = { row, number };
-        const isSelected = selectedSeats.some((s) => s.row === row && Number(s.number) === number);
-
-        setError("");
-
-        if (isSelected) {
-            setSelectedSeats((prev) => prev.filter((s) => !(s.row === row && Number(s.number) === number)));
-        } else {
-            setSelectedSeats((prev) => [...prev, seat]);
-        }
+    const updateSeatOptimistically = (seat: Seat, selected: boolean) => {
+        const nextSeats = selected
+            ? [...selectedSeatsRef.current, seat]
+            : selectedSeatsRef.current.filter(
+                (item) => !(item.row === seat.row && Number(item.number) === seat.number)
+            );
+        selectedSeatsRef.current = nextSeats;
+        setSelectedSeats(nextSeats);
 
         setShowtime((prev) => {
             if (!prev) return prev;
             return {
                 ...prev,
-                seats: prev.seats?.map((s) =>
-                    s.row === row && Number(s.number) === number
-                        ? { ...s, status: isSelected ? "available" : "held_by_me" }
-                        : s
+                seats: prev.seats?.map((item) =>
+                    item.row === seat.row && Number(item.number) === seat.number
+                        ? { ...item, status: selected ? "held_by_me" : "available" }
+                        : item
                 ),
             };
         });
+    };
+
+    const processSeatActions = async () => {
+        if (processingQueueRef.current) return;
+        processingQueueRef.current = true;
+        setIsSyncingSeats(true);
 
         try {
-            if (isSelected) {
-                if (bookingId) {
-                    const res = await updateBookingSeats(bookingId, "remove", [seat]);
-                    if (res.deleted) {
+            while (seatActionQueueRef.current.length > 0) {
+                const action = seatActionQueueRef.current.shift();
+                if (!action) continue;
+                let actionSeats = [action.seat];
+
+                try {
+                    if (action.isSelected) {
+                        if (bookingIdRef.current) {
+                            const result = await updateBookingSeats(bookingIdRef.current, "remove", [action.seat]);
+                            if (result.deleted) {
+                                bookingIdRef.current = null;
+                                setBookingId(null);
+                                setTimeLeft(300);
+                            }
+                        }
+                    } else {
+                        const seatsToAdd = actionSeats;
+                        while (
+                            seatActionQueueRef.current.length > 0 &&
+                            !seatActionQueueRef.current[0].isSelected
+                        ) {
+                            seatsToAdd.push(seatActionQueueRef.current.shift()!.seat);
+                        }
+
+                        if (bookingIdRef.current) {
+                            await updateBookingSeats(bookingIdRef.current, "add", seatsToAdd);
+                        } else {
+                            const result = await reserveSeats(showtimeId!, seatsToAdd);
+                            bookingIdRef.current = result.bookingId;
+                            setBookingId(result.bookingId);
+                            setTimeLeft(Math.floor((new Date(result.holdExpiresAt).getTime() - Date.now()) / 1000));
+                        }
+                    }
+                } catch (err: any) {
+                    const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Có lỗi xảy ra khi chọn ghế";
+                    const normalizedMessage = msg.toLowerCase();
+                    const isExpired = normalizedMessage.includes("not found") || normalizedMessage.includes("expired") || normalizedMessage.includes("not authorized");
+
+                    if (isExpired) {
+                        bookingIdRef.current = null;
+                        if (!action.isSelected) {
+                            try {
+                                const result = await reserveSeats(showtimeId!, actionSeats);
+                                bookingIdRef.current = result.bookingId;
+                                setBookingId(result.bookingId);
+                                setTimeLeft(Math.floor((new Date(result.holdExpiresAt).getTime() - Date.now()) / 1000));
+                                continue;
+                            } catch (retryError: any) {
+                                setError(retryError.response?.data?.error || retryError.message || "Không thể giữ ghế");
+                            }
+                        }
+                        bookingIdRef.current = null;
                         setBookingId(null);
                         setTimeLeft(300);
-                    }
-                }
-            } else {
-                if (bookingId) {
-                    await updateBookingSeats(bookingId, "add", [seat]);
-                } else {
-                    const result = await reserveSeats(showtimeId!, [seat]);
-                    setBookingId(result.bookingId);
-                    const expiresIn = new Date(result.holdExpiresAt).getTime() - Date.now();
-                    setTimeLeft(Math.floor(expiresIn / 1000));
-                    if (result.seats && !result.isNewBooking) {
-                        setSelectedSeats(result.seats);
+                        selectedSeatsRef.current = [];
+                        setSelectedSeats([]);
+                        setError("Phiên giữ ghế đã hết hạn. Vui lòng chọn lại.");
+                        seatActionQueueRef.current = [];
+                    } else {
+                        actionSeats.forEach((seat) => updateSeatOptimistically(seat, action.isSelected));
+                        setError(msg);
                     }
                 }
             }
-        } catch (err: any) {
-            if (isSelected) {
-                setSelectedSeats((prev) => [...prev, seat]);
-                setShowtime((prev) => {
-                    if (!prev) return prev;
-                    return {
-                        ...prev,
-                        seats: prev.seats?.map((s) =>
-                            s.row === row && Number(s.number) === number
-                                ? { ...s, status: "held_by_me" }
-                                : s
-                        ),
-                    };
-                });
-            } else {
-                setSelectedSeats((prev) => prev.filter((s) => !(s.row === row && Number(s.number) === number)));
-                setShowtime((prev) => {
-                    if (!prev) return prev;
-                    return {
-                        ...prev,
-                        seats: prev.seats?.map((s) =>
-                            s.row === row && Number(s.number) === number
-                                ? { ...s, status: "available" }
-                                : s
-                        ),
-                    };
-                });
-            }
-            setError(err.response?.data?.message || err.message || "Có lỗi xảy ra khi chọn ghế");
         } finally {
-            setProcessingSeat(false);
+            processingQueueRef.current = false;
+            setIsSyncingSeats(false);
         }
     };
 
+    const handleSeatClick = (row: string, number: number) => {
+        if (!showtime) return;
+
+        const seat: Seat = { row, number };
+        const isSelected = selectedSeatsRef.current.some((s) => s.row === row && Number(s.number) === number);
+
+        setError("");
+        updateSeatOptimistically(seat, !isSelected);
+        seatActionQueueRef.current.push({ seat, isSelected });
+        void processSeatActions();
+    };
+
     const handleProceedToPayment = () => {
-        if (selectedSeats.length === 0) {
+        if (isSyncingSeats || processingQueueRef.current || seatActionQueueRef.current.length > 0) {
+            setError("Đang cập nhật ghế, vui lòng chờ một chút.");
+            return;
+        }
+        if (selectedSeatsRef.current.length === 0) {
             setError("Vui lòng chọn ít nhất một ghế");
             return;
         }
@@ -231,6 +302,14 @@ const SeatSelectionPage: React.FC = () => {
         groupedSeats[seat.row].push(seat);
     });
 
+    const maxSeatNumber = Math.max(
+        0,
+        ...Object.values(groupedSeats).map((rowSeats) =>
+            Math.max(...rowSeats.map((seat) => Number(seat.number)))
+        )
+    );
+    const seatGridWidth = `${maxSeatNumber * 40 + Math.max(0, maxSeatNumber - 1) * 8}px`;
+
     const totalPrice = showtime ? selectedSeats.length * showtime.price : 0;
 
     if (loading) {
@@ -250,8 +329,8 @@ const SeatSelectionPage: React.FC = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 mb-6 text-gray-900 dark:text-white hover:text-primary transition-colors">
+        <div className="container mx-auto px-4 pb-16 pt-6">
+            <button onClick={() => navigate(`/movie/${showtime.movie._id}`, { replace: true })} className="mb-6 flex items-center gap-2 text-gray-900 dark:text-white hover:text-primary transition-colors">
                 <ArrowLeft className="w-5 h-5" />
                 Quay lại
             </button>
@@ -285,24 +364,42 @@ const SeatSelectionPage: React.FC = () => {
                         {error && <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">{error}</div>}
 
                         {/* Màn hình */}
-                        <div className="mb-8 text-center">
-                            <div className="inline-block bg-linear-to-r from-gray-600 to-gray-800 text-white px-8 py-2 rounded-t-lg">MÀN HÌNH</div>
+                        <div
+                            className="mx-auto mb-8 grid w-fit max-w-full grid-cols-[2rem_0.5rem_auto]"
+                            style={{ gridTemplateColumns: `2rem 0.5rem minmax(0, ${seatGridWidth})` }}
+                        >
+                            <div className="col-start-3">
+                                <div
+                                    className="flex h-12 items-center justify-center rounded-t-lg bg-linear-to-r from-gray-600 to-gray-800 px-4 text-white"
+                                    style={{ width: seatGridWidth }}
+                                >
+                                    MÀN HÌNH
+                                </div>
+                            </div>
                         </div>
 
                         {/* Sơ đồ ghế */}
-                        <div className="space-y-4 flex flex-col items-center">
+                        <div
+                            className="mx-auto w-fit max-w-full space-y-4"
+                            style={{ gridTemplateColumns: `2rem 0.5rem ${seatGridWidth}` }}
+                        >
                             {Object.keys(groupedSeats)
                                 .sort()
                                 .map((row) => {
-                                    // Tìm số ghế tối đa trong hàng này
-                                    const maxSeatNumber = Math.max(...groupedSeats[row].map((s) => s.number));
                                     // Tạo mảng từ 1 đến maxSeatNumber
                                     const allSeatNumbers = Array.from({ length: maxSeatNumber }, (_, i) => i + 1);
 
                                     return (
-                                        <div key={row} className="flex items-center gap-2">
-                                            <div className="w-8 text-center text-gray-900 dark:text-white font-bold">{row}</div>
-                                            <div className="flex gap-2 flex-wrap">
+                                        <div
+                                            key={row}
+                                            className="grid grid-cols-[2rem_0.5rem_auto] items-center"
+                                            style={{ gridTemplateColumns: `2rem 0.5rem ${seatGridWidth}` }}
+                                        >
+                                            <div className="text-center text-gray-900 dark:text-white font-bold">{row}</div>
+                                            <div
+                                                className="col-start-3 grid gap-2"
+                                                style={{ gridTemplateColumns: `repeat(${maxSeatNumber}, 2.5rem)` }}
+                                            >
                                                 {allSeatNumbers.map((seatNumber) => {
                                                     // Kiểm tra xem ghế này có tồn tại trong dữ liệu không
                                                     const seatExists = groupedSeats[row].find((s) => Number(s.number) === seatNumber);
@@ -332,18 +429,23 @@ const SeatSelectionPage: React.FC = () => {
                         </div>
 
                         {/* Chú thích */}
-                        <div className="mt-8 flex gap-6 justify-center text-sm">
+                        <div
+                            className="mx-auto mt-8 grid w-fit max-w-full grid-cols-[2rem_0.5rem_auto] text-sm"
+                            style={{ gridTemplateColumns: `2rem 0.5rem ${seatGridWidth}` }}
+                        >
+                            <div className="col-start-3 flex flex-nowrap justify-center gap-6 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded bg-gray-200 dark:bg-[#232f48]"></div>
-                                <span className="text-gray-600 dark:text-text-secondary">Trống</span>
+                                <span className="whitespace-nowrap text-gray-600 dark:text-text-secondary">Trống</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded bg-primary"></div>
-                                <span className="text-gray-600 dark:text-text-secondary">Đã chọn</span>
+                                <span className="whitespace-nowrap text-gray-600 dark:text-text-secondary">Đã chọn</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded bg-gray-700 dark:bg-gray-900"></div>
-                                <span className="text-gray-600 dark:text-text-secondary">Đã đặt</span>
+                                <span className="whitespace-nowrap text-gray-600 dark:text-text-secondary">Đã đặt</span>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -384,7 +486,7 @@ const SeatSelectionPage: React.FC = () => {
 
                         <button
                             onClick={handleProceedToPayment}
-                            disabled={selectedSeats.length === 0 || timeLeft <= 0}
+                            disabled={selectedSeats.length === 0 || timeLeft <= 0 || isSyncingSeats}
                             className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
                         >
                             {timeLeft <= 0 ? "Hết thời gian" : "Thanh toán"}

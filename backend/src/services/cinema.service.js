@@ -25,7 +25,7 @@ const createCinema = async (cinemaData) => {
   const cinema = new Cinema({
     ...restData,
     rows,
-    columns
+    columns,
   });
 
   return await cinema.save();

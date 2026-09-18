@@ -8,9 +8,9 @@ const movieSchema = new mongoose.Schema({
   posterImg: { type: String },
   trailerLink: { type: String },
   description: { type: String },
-  status: { 
-    type: String, 
-    enum: ['now_showing', 'coming_soon', 'ended']
+  status: {
+    type: String,
+    enum: ['now_showing', 'coming_soon', 'ended'],
   },
 });
 
