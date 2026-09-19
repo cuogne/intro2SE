@@ -35,7 +35,7 @@ export interface BookingItem {
   totalPrice: number;
   seat: string[];
   quantity: number;
-  status: "confirmed" | "pending" | "cancelled";
+  status: "confirmed" | "pending" | "cancelled" | "expired";
   bookedAt: string;
   paidAt?: string;
   paymentProvider?: string;
@@ -178,23 +178,15 @@ export const getBookingById = async (id: string): Promise<BookingItem | null> =>
 // Backend Route: router.get('/user/history', ...)
 export const getBookingsHistory = async (): Promise<BookingItem[] | null> => {
   try {
-      const response = await api.get(`/v1/bookings/me`);
-      const data = response.data.data;
-      if (!data || data.length === 0) {
-          return [];
-      }
+    const response = await api.get<BookingsResponse>("/v1/bookings/me");
+    const data = response.data.data;
+    if (!data || data.length === 0) {
+      return [];
+    }
 
-      const bookings: BookingItem[] = [];
-      for (const b of data) {
-          const detail = await getBookingById(b._id);
-          if (detail) {
-              bookings.push(detail);
-          }
-      }
-
-      return bookings;
+    return data.filter((booking: BookingItem) => booking.status !== "expired");
   } catch (error) {
-      console.error("Lỗi lấy thông tin booking:", error);
-      return null;
+    console.error("Lỗi lấy thông tin booking:", error);
+    return null;
   }
-}
+};

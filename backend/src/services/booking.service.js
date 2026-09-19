@@ -8,16 +8,16 @@ const seatHold = require('./seatHold.service');
 
 // GET /api/v1/bookings/me
 const getBookingByUser = async (userId) => {
-  return await Booking.find({ user: userId })
-    .select('showtime user seat price bookedAt')
+  const bookings = await Booking.find({ user: userId, status: { $ne: 'expired' } })
+    .select('showtime user seat totalPrice status bookedAt paidAt paymentProvider paymentTransId paymentMeta')
     .populate('user', 'username')
     .populate({
       path: 'showtime',
-      select: 'movie cinema startTime price',
+      select: 'movie cinema startTime',
       populate: [
         {
           path: 'movie',
-          select: 'title minutes',
+          select: 'title',
         },
         {
           path: 'cinema',
@@ -25,7 +25,28 @@ const getBookingByUser = async (userId) => {
         },
       ],
     })
-    .sort({ bookedAt: -1 });
+    .sort({ bookedAt: -1 })
+    .lean();
+
+  return bookings
+    .filter((booking) => booking.showtime?.movie && booking.showtime?.cinema)
+    .map((booking) => ({
+      id: booking._id,
+      user: booking.user?.username || '',
+      movie: booking.showtime.movie.title,
+      cinema: booking.showtime.cinema.name,
+      address: booking.showtime.cinema.address || '',
+      startTime: booking.showtime.startTime,
+      totalPrice: booking.totalPrice,
+      seat: booking.seat.map((seat) => `${seat.row}${seat.number}`),
+      quantity: booking.seat.length,
+      status: booking.status,
+      bookedAt: booking.bookedAt,
+      paidAt: booking.paidAt || null,
+      paymentProvider: booking.paymentProvider || null,
+      paymentTransId: booking.paymentTransId || null,
+      paymentMeta: booking.paymentMeta || null,
+    }));
 };
 
 // GET /api/v1/bookings/:id
